@@ -4,6 +4,7 @@ Uso:
     uvicorn app.main:app --host 127.0.0.1 --port 8200
     Chat web: http://127.0.0.1:8200/
 """
+import json
 import os
 import uuid
 from pathlib import Path
@@ -13,11 +14,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from app import agente
+from app import agente, whatsapp
 
 load_dotenv()
 
-app = FastAPI(title='Experto SIGAP Rawson', version='0.1.0')
+app = FastAPI(title='Experto SIGAP Rawson', version='0.2.0')
 
 
 class ChatIn(BaseModel):
@@ -33,6 +34,33 @@ def chat_web():
 @app.get('/api/health')
 def health():
     return {'status': 'ok', 'servicio': 'experto-sigap', 'modelo': os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')}
+
+
+# ── Webhook de WhatsApp Cloud API (Meta) ──────────────────────
+@app.get('/webhook/whatsapp')
+def webhook_verificar(request: Request):
+    """Verificación inicial de Meta: hub.mode + hub.verify_token + hub.challenge."""
+    modo = request.query_params.get('hub.mode')
+    token = request.query_params.get('hub.verify_token')
+    challenge = request.query_params.get('hub.challenge')
+    if modo == 'subscribe' and whatsapp.WA_VERIFY_TOKEN and token == whatsapp.WA_VERIFY_TOKEN:
+        return int(challenge or 0)
+    return JSONResponse(status_code=403, content={'error': 'verify_token inválido'})
+
+
+@app.post('/webhook/whatsapp')
+async def webhook_mensajes(request: Request):
+    """Recepción de mensajes (con validación de firma HMAC)."""
+    body = await request.body()
+    firma = request.headers.get('x-hub-signature-256', '')
+    if not whatsapp.verificar_firma(body, firma):
+        return JSONResponse(status_code=401, content={'error': 'firma inválida'})
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return JSONResponse(status_code=400, content={'error': 'JSON inválido'})
+    resultado = whatsapp.manejar_webhook(payload)
+    return resultado
 
 
 @app.post('/api/chat')
