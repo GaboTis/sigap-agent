@@ -34,7 +34,8 @@ en SQL Server): boletas, cobros, planes de pago, certificados de ejecución, con
 (padrón de contribuyentes), expediente/expemovi (sistema de expedientes), sectmuni
 (sectores municipales), ordencpa/reciteso/proveedor (compras y pagos a proveedores),
 stock, partidas presupuestarias y snapshots DWH del padrón de deuda (uno por mes).
-Tipos de contribuyente: IM (inmuebles), CO (comercios), CM (cementerio), MA (maquinaria).
+Tipos de contribuyente: IM (inmuebles), CO (comercios), CM (cementerio), CG (comercio
+general), MA (maquinaria), PT (patentes), JF (jubilados/familia), DC (derechos).
 Los expedientes se identifican como NUMERO-LETRA/AÑO (ej. 3540-S-2026) y sus estados
 son: EN CURSO, PAGADO/CANCELADO, CERRADO y ARCHIVO. El recorrido entre sectores queda
 registrado en expemovi con fecha, usuario y sector de origen/destino.

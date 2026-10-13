@@ -81,6 +81,30 @@ def deuda_contribuyente(codigo: str) -> dict:
     }
 
 
+def buscar_por_dni(dni: int) -> dict:
+    """Busca contribuyentes por DNI para verificar identidad.
+
+    ⚠️ Los datos devueltos (nombre, domicilio, deuda) son para CONTRASTAR la
+    identidad: el agente NUNCA debe mostrarlos al usuario antes de que este
+    confirme correctamente el dato de verificación.
+    """
+    return _get('/api/contribuyentes/por-dni', {'dni': dni})
+
+
+def verificar_identidad(dni: int, nomenclatura: str, respuesta: str) -> dict:
+    """Compara la respuesta de contraste del usuario contra el padrón (determinístico).
+
+    Devuelve {'verificada': true/false}. Si verificada=true, recién ahí se puede
+    mostrar la deuda de esa cuenta.
+    """
+    import httpx as _httpx
+    resp = _httpx.post(f'{MCP_URL}/api/contribuyentes/verificar',
+                       json={'dni': dni, 'nomenclatura': nomenclatura, 'respuesta': respuesta},
+                       headers={'Authorization': f'Bearer {MCP_TOKEN}'}, timeout=90)
+    resp.raise_for_status()
+    return resp.json()
+
+
 def buscar_contribuyente(q: str, limit: int = 5) -> dict:
     """Busca contribuyentes en el padrón por nomenclatura o nombre."""
     d = _get('/api/contribuyentes/buscar', {'q': q, 'limit': limit})
@@ -169,6 +193,42 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
+            'name': 'buscar_por_dni',
+            'description': 'Busca contribuyentes por DNI para VERIFICAR IDENTIDAD antes de mostrar '
+                           'deuda o datos personales. Devuelve nombre, domicilio, barrio y deuda '
+                           'de las cuentas asociadas. Los datos son para contraste interno: nunca '
+                           'mostrarlos al usuario antes de que confirme el dato de verificación.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'dni': {'type': 'integer', 'description': 'Número de DNI del solicitante'},
+                },
+                'required': ['dni'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'verificar_identidad',
+            'description': 'Verificación determinística de identidad: compara la respuesta de '
+                           'contraste del usuario (calle o nombre del titular) contra el padrón. '
+                           'Usar DESPUÉS de pedir el dato de contraste. Si verificada=true se puede '
+                           'mostrar la deuda de la cuenta; si false, negar los datos y derivar a Rentas.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'dni': {'type': 'integer', 'description': 'DNI del solicitante'},
+                    'nomenclatura': {'type': 'string', 'description': 'Nomenclatura de la cuenta elegida'},
+                    'respuesta': {'type': 'string', 'description': 'Respuesta textual del usuario al dato de contraste'},
+                },
+                'required': ['dni', 'nomenclatura', 'respuesta'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'buscar_contribuyente',
             'description': 'Busca contribuyentes en el padrón por nombre, razón social o nomenclatura.',
             'parameters': {
@@ -221,6 +281,8 @@ _FUNCIONES = {
     'detalle_expediente': detalle_expediente,
     'analitica_expedientes': analitica_expedientes,
     'deuda_contribuyente': deuda_contribuyente,
+    'buscar_por_dni': buscar_por_dni,
+    'verificar_identidad': verificar_identidad,
     'buscar_contribuyente': buscar_contribuyente,
     'recaudacion': recaudacion,
     'ejecucion_presupuestaria': ejecucion_presupuestaria,

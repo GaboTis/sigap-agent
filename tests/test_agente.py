@@ -117,6 +117,16 @@ def test_responder_error_llm():
     assert 'problema' in r.lower()
 
 
+def test_buscar_por_dni_via_mcp():
+    respuesta = {'total': 1, 'dni': 18433285, 'resultados': [
+        {'nomenclatura': 'CM100489', 'tipo': 'CM', 'nombre': 'CHACON ANDRES FABIAN',
+         'domicilio': 'NICHO: Sec 1-4', 'barrio': '', 'activo': True, 'deuda_total': 14691.51}]}
+    with patch('app.herramientas._get', return_value=respuesta):
+        r = herramientas.buscar_por_dni(18433285)
+    assert r['total'] == 1
+    assert r['resultados'][0]['nomenclatura'] == 'CM100489'
+
+
 def test_responder_respeta_privacidad_en_sistema():
     """El prompt del sistema debe incluir la regla de verificación de identidad."""
     with patch.object(agente, '_cliente', MagicMock(return_value=None)):
@@ -125,3 +135,5 @@ def test_responder_respeta_privacidad_en_sistema():
     sistema = mensajes[0]['content']
     assert 'verific' in sistema.lower()
     assert 'terceros' in sistema.lower()
+    assert 'buscar_por_dni' in sistema.lower()  # protocolo de Fase 2
+    assert 'contraste' in sistema.lower()
