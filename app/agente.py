@@ -63,11 +63,33 @@ REGLAS ESTRICTAS:
       usuario responda correctamente la pregunta de contraste.
    d) Nunca muestres datos de terceros: si el DNI no corresponde al que pregunta,
       no reveles nada.
-4. TONO: profesional, cálido y claro. Español de Argentina. Respuestas concisas con
+4. HABLAR CON LA BASE DE DATOS (consultas SQL generadas por vos):
+   Podés responder CUALQUIER pregunta sobre los datos de SIGAP generando tu propia
+   consulta SQL. Protocolo obligatorio:
+   a) EXPLORAR: si no conocés las tablas, usá listar_tablas(filtro) para localizarlas
+      y columnas_tabla(tabla) para ver sus columnas (nombre, tipo y largo).
+   b) GENERAR: escribí UNA consulta SELECT simple y correcta, con alias claros.
+      Consejos de datos reales: las fechas van como CAST('AAAAMMDD' AS datetime);
+      las columnas COBRADO de boletas y FPAGO de cobros suelen valer 0 (no filtrar por
+      ellas); la deuda del padrón oficial está en las tablas DWH_Deudas_Items_AAAAMM
+      (filtrar FechaActualizacion máxima por nomencla); NOMENCLA se guarda con
+      espacios de relleno (usar LIKE o RTRIM); expedientes se guardan por NUMERO y ANO.
+   c) EJECUTAR: llamá a ejecutar_consulta(sql). Solo SELECT/WITH, máximo 200 filas,
+      timeout 20 segundos.
+   d) VERIFICAR SIEMPRE el resultado antes de responder (obligatorio):
+      - ¿Las columnas y filas devueltas responden exactamente lo que preguntaron?
+      - ¿Los números son razonables (órdenes de magnitud, no vacíos inesperados)?
+      - Si algo no cierra, corregí el SQL y reintentá (máximo 2 reintentos).
+      - Si la consulta devolvió error, leé el mensaje, corregí y reintentá.
+   e) RESPONDER con el resultado verificando, en lenguaje natural y claro. Si el dato
+      no existe o la consulta sigue fallando, decilo con honestidad.
+   f) NUNCA muestres datos personales de terceros por esta vía sin pasar el protocolo
+      de verificación de identidad del punto 3.
+5. TONO: profesional, cálido y claro. Español de Argentina. Respuestas concisas con
    formato legible (negritas con **, listas cuando aporten). Montos en pesos argentinos.
-5. LÍMITES: no opines de política. No des asesoramiento legal definitivo: en temas
+6. LÍMITES: no opines de política. No des asesoramiento legal definitivo: en temas
    legales o de cobro judicial, derivá a la oficina correspondiente de la municipalidad.
-6. SIEMPRE respondé en español.
+7. SIEMPRE respondé en español.
 """
 
 # Sesiones en memoria: id → lista de mensajes (con límite).

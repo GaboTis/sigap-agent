@@ -24,6 +24,34 @@ def _get(ruta, params=None):
     return resp.json()
 
 
+def _post(ruta, body):
+    resp = httpx.post(f'{MCP_URL}{ruta}', json=body,
+                      headers={'Authorization': f'Bearer {MCP_TOKEN}'}, timeout=90)
+    resp.raise_for_status()
+    return resp.json()
+
+
+# ── Consultas SQL a la base (agente "habla con la DB") ─────────
+
+def listar_tablas(filtro: str = '') -> dict:
+    """Lista tablas de la base SIGAP con su cantidad de filas."""
+    return _get('/api/consulta/esquema', {'filtro': filtro})
+
+
+def columnas_tabla(tabla: str) -> dict:
+    """Columnas de una tabla de SIGAP (nombre, tipo, largo)."""
+    return _get('/api/consulta/columnas', {'tabla': tabla})
+
+
+def ejecutar_consulta(sql: str) -> dict:
+    """Ejecuta una consulta SELECT (solo lectura) contra SIGAP.
+
+    Límites: máx. 200 filas, timeout 20s, sin bloqueos. Si falla, devuelve
+    el error para corregir la consulta y reintentar.
+    """
+    return _post('/api/consulta/sql', {'sql': sql})
+
+
 # ── Sitio oficial del municipio (municipioderawson.gob.ar) ────
 
 def ultimas_noticias(n: int = 5) -> dict:
@@ -301,6 +329,54 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
+            'name': 'listar_tablas',
+            'description': 'Lista las tablas de la base SIGAP con su cantidad aproximada de filas '
+                           '(las más grandes primero). Usar para localizar la tabla correcta antes '
+                           'de escribir una consulta SQL.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'filtro': {'type': 'string', 'description': 'Parte del nombre de la tabla (ej. "cobro", "boleta", "contribu")'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'columnas_tabla',
+            'description': 'Devuelve las columnas de una tabla de SIGAP (nombre, tipo y largo) '
+                           'para armar una consulta SQL correcta.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tabla': {'type': 'string', 'description': 'Nombre exacto de la tabla'},
+                },
+                'required': ['tabla'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'ejecutar_consulta',
+            'description': 'Ejecuta una consulta SQL de SOLO LECTURA generada para responder la '
+                           'pregunta del usuario, contra la base SIGAP. Solo SELECT/WITH; máximo '
+                           '200 filas; timeout 20s. Si devuelve error, corregí la consulta y '
+                           'reintentá. Antes de responder, verificá que los resultados realmente '
+                           'respondan la pregunta.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'sql': {'type': 'string', 'description': 'Consulta SELECT a ejecutar'},
+                },
+                'required': ['sql'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'ultimas_noticias',
             'description': 'Últimas noticias publicadas en el sitio oficial del municipio '
                            '(municipioderawson.gob.ar). Usar cuando preguntan por novedades, '
@@ -371,6 +447,9 @@ _FUNCIONES = {
     'recaudacion': recaudacion,
     'ejecucion_presupuestaria': ejecucion_presupuestaria,
     'kpis_ejecutivos': kpis_ejecutivos,
+    'listar_tablas': listar_tablas,
+    'columnas_tabla': columnas_tabla,
+    'ejecutar_consulta': ejecutar_consulta,
     'ultimas_noticias': ultimas_noticias,
     'buscar_sitio_municipal': buscar_sitio_municipal,
     'guia_tramites': guia_tramites,
