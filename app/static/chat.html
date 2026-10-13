@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experto SIGAP Rawson</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%231e3a8a'/><text x='8' y='12' font-size='10' text-anchor='middle' fill='white'>S</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+    :root { --accent: #1e3a8a; }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; height: 100vh; display: flex; flex-direction: column;
+        background: #f1f5f9; color: #0f172a;
+        font-family: "Roboto Condensed", system-ui, sans-serif;
+    }
+    header {
+        background: #fff; border-bottom: 1px solid #e2e8f0; padding: 12px 20px;
+        display: flex; align-items: center; gap: 12px;
+    }
+    header .logo {
+        width: 40px; height: 40px; border-radius: 10px; background: var(--accent);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+    }
+    header h1 { font-size: 1.1rem; margin: 0; }
+    header .sub { font-size: 0.75rem; color: #64748b; }
+    header .estado { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #475569; }
+    .live { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+
+    #chat {
+        flex: 1; overflow-y: auto; padding: 20px; max-width: 860px;
+        width: 100%; margin: 0 auto;
+    }
+    .msg { display: flex; margin-bottom: 14px; gap: 10px; }
+    .msg .avatar {
+        width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.95rem; color: #fff;
+    }
+    .msg.agente .avatar { background: var(--accent); }
+    .msg.usuario .avatar { background: #64748b; }
+    .burbuja {
+        max-width: 76%; padding: 10px 14px; border-radius: 12px;
+        font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .msg.agente .burbuja { background: #fff; border: 1px solid #e2e8f0; border-top-left-radius: 3px; }
+    .msg.usuario { flex-direction: row-reverse; }
+    .msg.usuario .burbuja { background: var(--accent); color: #fff; border-top-right-radius: 3px; }
+    .burbuja b { font-weight: 700; }
+
+    /* Bienvenida */
+    .bienvenida { text-align: center; padding: 30px 10px 10px; color: #64748b; }
+    .bienvenida .icono { font-size: 2.6rem; color: var(--accent); }
+    .bienvenida h2 { color: #0f172a; font-size: 1.25rem; margin: 10px 0 4px; }
+    .sugerencias { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .sug {
+        background: #fff; border: 1px solid #e2e8f0; color: #334155; border-radius: 99px;
+        padding: 7px 14px; font-size: 0.82rem; cursor: pointer; font-family: inherit;
+        transition: border-color 150ms ease, background 150ms ease;
+    }
+    .sug:hover { border-color: #93c5fd; background: #f8faff; }
+
+    /* Typing */
+    .typing { display: inline-flex; gap: 4px; padding: 4px 0; }
+    .typing span {
+        width: 7px; height: 7px; border-radius: 50%; background: #94a3b8;
+        animation: salto 1s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes salto { 30% { transform: translateY(-5px); } }
+
+    /* Input */
+    #entrada {
+        background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 16px;
+    }
+    .caja {
+        max-width: 860px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end;
+    }
+    textarea {
+        flex: 1; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 10px 14px;
+        font-size: 0.95rem; font-family: inherit; resize: none; max-height: 120px;
+        outline: none;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(30 58 138 / 0.12); }
+    #btnEnviar {
+        background: var(--accent); color: #fff; border: none; border-radius: 10px;
+        width: 44px; height: 42px; font-size: 1.1rem; cursor: pointer; flex-shrink: 0;
+        transition: background 150ms ease;
+    }
+    #btnEnviar:hover { background: #1e40af; }
+    #btnEnviar:disabled { background: #94a3b8; cursor: default; }
+    .nota { text-align: center; font-size: 0.68rem; color: #94a3b8; margin-top: 6px; }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">S</div>
+    <div>
+        <h1>Experto SIGAP Rawson</h1>
+        <div class="sub">Asistente de la Municipalidad de Rawson — datos reales del sistema SIGAP</div>
+    </div>
+    <div class="estado"><span class="live"></span>En línea · datos en vivo</div>
+</header>
+
+<div id="chat">
+    <div class="bienvenida" id="bienvenida">
+        <div class="icono"><i class="bi bi-chat-square-text"></i></div>
+        <h2>¿En qué te puedo ayudar?</h2>
+        <div>Preguntame por expedientes, deudas, recaudación o cómo funcionan los trámites municipales.</div>
+        <div class="sugerencias">
+            <button class="sug">¿Dónde está el expediente 3540-S-2026?</button>
+            <button class="sug">¿Cuánto recaudó el municipio este mes?</button>
+            <button class="sug">¿Cómo se calcula la deuda de tasas?</button>
+            <button class="sug">¿Qué es un plan de pago?</button>
+        </div>
+    </div>
+</div>
+
+<div id="entrada">
+    <div class="caja">
+        <textarea id="txt" rows="1" placeholder="Escribí tu consulta… (Enter para enviar)"></textarea>
+        <button id="btnEnviar" title="Enviar"><i class="bi bi-send"></i></button>
+    </div>
+    <div class="nota">Fase 1 · El agente consulta datos reales de SIGAP · Nunca inventa información</div>
+</div>
+
+<script>
+const chatEl = document.getElementById('chat');
+const txt = document.getElementById('txt');
+const btn = document.getElementById('btnEnviar');
+let sesionId = null;
+let ocupado = false;
+
+function formatear(texto) {
+    // Markdown mínimo: **negrita**, listas con -, saltos de línea
+    let t = String(texto || '');
+    const div = document.createElement('div');
+    div.textContent = t;
+    t = div.innerHTML;                      // escapar
+    t = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    t = t.replace(/^[-•] /gm, '• ');
+    return t.replace(/\n/g, '<br>');
+}
+
+function agregarMsg(rol, texto) {
+    const bienvenida = document.getElementById('bienvenida');
+    if (bienvenida) bienvenida.remove();
+    const m = document.createElement('div');
+    m.className = 'msg ' + rol;
+    m.innerHTML = `<div class="avatar">${rol === 'agente' ? '<i class="bi bi-robot"></i>' : '<i class="bi bi-person"></i>'}</div>
+                   <div class="burbuja">${formatear(texto)}</div>`;
+    chatEl.appendChild(m);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return m;
+}
+
+function mostrarTyping() {
+    const m = document.createElement('div');
+    m.className = 'msg agente';
+    m.id = 'typing';
+    m.innerHTML = `<div class="avatar"><i class="bi bi-robot"></i></div>
+                   <div class="burbuja"><div class="typing"><span></span><span></span><span></span></div></div>`;
+    chatEl.appendChild(m);
+    chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function enviar() {
+    const texto = txt.value.trim();
+    if (!texto || ocupado) return;
+    ocupado = true;
+    btn.disabled = true;
+    txt.value = '';
+    txt.style.height = 'auto';
+    agregarMsg('usuario', texto);
+    mostrarTyping();
+    try {
+        const resp = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mensaje: texto, sesion_id: sesionId }),
+        });
+        const data = await resp.json();
+        document.getElementById('typing')?.remove();
+        sesionId = data.sesion_id || sesionId;
+        agregarMsg('agente', data.respuesta || '⚠️ Sin respuesta del agente.');
+    } catch (e) {
+        document.getElementById('typing')?.remove();
+        agregarMsg('agente', '⚠️ No se pudo conectar con el agente. Reintentá.');
+    } finally {
+        ocupado = false;
+        btn.disabled = false;
+        txt.focus();
+    }
+}
+
+btn.addEventListener('click', enviar);
+txt.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
+});
+txt.addEventListener('input', () => {
+    txt.style.height = 'auto';
+    txt.style.height = Math.min(txt.scrollHeight, 120) + 'px';
+});
+document.querySelectorAll('.sug').forEach(b => {
+    b.addEventListener('click', () => { txt.value = b.textContent.trim(); enviar(); });
+});
+</script>
+</body>
+</html>
