@@ -9,6 +9,8 @@ import os
 import httpx
 from dotenv import load_dotenv
 
+from app import sitio_municipal
+
 load_dotenv()
 
 MCP_URL = os.getenv('SIGAP_MCP_URL', 'http://127.0.0.1:8100')
@@ -20,6 +22,28 @@ def _get(ruta, params=None):
                      headers={'Authorization': f'Bearer {MCP_TOKEN}'}, timeout=90)
     resp.raise_for_status()
     return resp.json()
+
+
+# ── Sitio oficial del municipio (municipioderawson.gob.ar) ────
+
+def ultimas_noticias(n: int = 5) -> dict:
+    """Últimas noticias publicadas en el sitio oficial del municipio."""
+    return sitio_municipal.ultimas_noticias(n)
+
+
+def buscar_sitio_municipal(consulta: str, n: int = 6) -> dict:
+    """Busca en el sitio oficial del municipio (noticias, páginas y trámites)."""
+    return sitio_municipal.buscar_sitio(consulta, n)
+
+
+def guia_tramites(n: int = 10) -> dict:
+    """Lista la guía de trámites municipales del sitio oficial."""
+    return sitio_municipal.guia_tramites(n)
+
+
+def licitaciones(n: int = 5) -> dict:
+    """Últimas licitaciones publicadas en Gobierno Abierto."""
+    return sitio_municipal.licitaciones(n)
 
 
 def buscar_expediente(q: str, limit: int = 5) -> dict:
@@ -274,6 +298,66 @@ HERRAMIENTAS = [
             'parameters': {'type': 'object', 'properties': {}},
         },
     },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'ultimas_noticias',
+            'description': 'Últimas noticias publicadas en el sitio oficial del municipio '
+                           '(municipioderawson.gob.ar). Usar cuando preguntan por novedades, '
+                           'noticias o anuncios recientes del municipio.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'n': {'type': 'integer', 'description': 'Cantidad de noticias (default 5)'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'buscar_sitio_municipal',
+            'description': 'Busca en el sitio oficial del municipio (noticias, páginas, ordenanzas, '
+                           'licitaciones, trámites). Usar cuando preguntan por un trámite específico, '
+                           'licitación, ordenanza, resolución, evento o información publicada en la web municipal.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'consulta': {'type': 'string', 'description': 'Términos a buscar (ej. "moratoria", "licitación")'},
+                    'n': {'type': 'integer', 'description': 'Máximo de resultados (default 6)'},
+                },
+                'required': ['consulta'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'guia_tramites',
+            'description': 'Lista la guía de trámites municipales del sitio oficial. Usar cuando '
+                           'preguntan qué trámites existen o dónde hacer un trámite municipal.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'n': {'type': 'integer', 'description': 'Cantidad de trámites (default 10)'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'licitaciones',
+            'description': 'Últimas licitaciones públicas publicadas en el portal de Gobierno Abierto '
+                           'del municipio. Usar cuando preguntan por licitaciones o compras públicas.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'n': {'type': 'integer', 'description': 'Cantidad de licitaciones (default 5)'},
+                },
+            },
+        },
+    },
 ]
 
 _FUNCIONES = {
@@ -287,6 +371,10 @@ _FUNCIONES = {
     'recaudacion': recaudacion,
     'ejecucion_presupuestaria': ejecucion_presupuestaria,
     'kpis_ejecutivos': kpis_ejecutivos,
+    'ultimas_noticias': ultimas_noticias,
+    'buscar_sitio_municipal': buscar_sitio_municipal,
+    'guia_tramites': guia_tramites,
+    'licitaciones': licitaciones,
 }
 
 

@@ -1,14 +1,14 @@
 """Base de conocimiento municipal del agente.
 
-Carga la documentación experta del proyecto SIGAP KPI (wiki + docs) y recupera
-los fragmentos relevantes para cada pregunta (RAG simple por palabras clave,
-sin dependencias externas).
+Carga la documentación experta del proyecto SIGAP KPI (wiki + docs) y del sitio
+oficial del municipio (datos_municipio/), y recupera los fragmentos relevantes
+para cada pregunta (RAG simple por palabras clave, sin dependencias externas).
 """
-import re
 import unicodedata
 from pathlib import Path
 
 SIGAP_KPI = Path(r'C:\Users\User\Documents\CODE\SIGAPP KPI')
+DATOS_MUNICIPIO = Path(__file__).resolve().parent.parent / 'datos_municipio'
 
 # Archivos de conocimiento (curados) y su límite de caracteres.
 _DOCS = [
@@ -24,6 +24,11 @@ _DOCS = [
     ('docs/MEJORAS_INGRESOS_19DIC2025.md', 6000),
     ('docs/Analisis_Base_Datos_SIGAP.md', 9000),
     ('design/PRODUCT.md', 5000),
+]
+
+# Documentos del sitio oficial del municipio (datos_municipio/).
+_DOCS_MUNICIPIO = [
+    ('autoridades_y_contacto.md', 9000),
 ]
 
 # Perfil institucional inyectado siempre en el prompt del agente.
@@ -66,6 +71,20 @@ def _cargar_documentos():
         docs.append({
             'titulo': ruta.name.replace('.md', '').replace('-', ' ').title(),
             'ruta': rel,
+            'texto': texto,
+            'norm': _normalizar(texto),
+        })
+    # Sitio oficial del municipio (fuente: municipioderawson.gob.ar)
+    for nombre, limite in _DOCS_MUNICIPIO:
+        ruta = DATOS_MUNICIPIO / nombre
+        if not ruta.exists():
+            continue
+        texto = ruta.read_text(encoding='utf-8', errors='replace')
+        if len(texto) > limite:
+            texto = texto[:limite] + '\n…'
+        docs.append({
+            'titulo': 'Sitio Oficial — ' + nombre.replace('.md', '').replace('_', ' ').title(),
+            'ruta': f'datos_municipio/{nombre}',
             'texto': texto,
             'norm': _normalizar(texto),
         })
