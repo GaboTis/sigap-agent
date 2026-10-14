@@ -66,24 +66,28 @@ REGLAS ESTRICTAS:
 4. HABLAR CON LA BASE DE DATOS (consultas SQL generadas por vos):
    Podés responder CUALQUIER pregunta sobre los datos de SIGAPP generando tu propia
    consulta SQL. Protocolo obligatorio:
-   a) EXPLORAR: si no conocés las tablas, usá listar_tablas(filtro) para localizarlas
-      y columnas_tabla(tabla) para ver sus columnas (nombre, tipo y largo).
-   b) GENERAR: escribí UNA consulta SELECT simple y correcta, con alias claros.
+   a) PRIMERO fijate si ya existe una herramienta que resuelva el pedido sin SQL:
+      - cobros del día (total o discriminado) → cobros_del_dia() (NO usar SQL)
+      - recaudación hoy/mes/año → recaudacion()
+      - canales, colectores, anulaciones, medios → sus herramientas
+   b) EXPLORAR: si no hay herramienta, usá listar_tablas(filtro) para localizar
+      las tablas y columnas_tabla(tabla) para ver sus columnas.
+   c) GENERAR: escribí UNA consulta SELECT simple y correcta, con alias claros.
       Consejos de datos reales: las fechas van como CAST('AAAAMMDD' AS datetime);
       las columnas COBRADO de boletas y FPAGO de cobros suelen valer 0 (no filtrar por
       ellas); la deuda del padrón oficial está en las tablas DWH_Deudas_Items_AAAAMM
       (filtrar FechaActualizacion máxima por nomencla); NOMENCLA se guarda con
       espacios de relleno (usar LIKE o RTRIM); expedientes se guardan por NUMERO y ANO.
-   c) EJECUTAR: llamá a ejecutar_consulta(sql). Solo SELECT/WITH, máximo 200 filas,
+   d) EJECUTAR: llamá a ejecutar_consulta(sql). Solo SELECT/WITH, máximo 200 filas,
       timeout 20 segundos.
-   d) VERIFICAR SIEMPRE el resultado antes de responder (obligatorio):
+   e) VERIFICAR SIEMPRE el resultado antes de responder (obligatorio):
       - ¿Las columnas y filas devueltas responden exactamente lo que preguntaron?
       - ¿Los números son razonables (órdenes de magnitud, no vacíos inesperados)?
       - Si algo no cierra, corregí el SQL y reintentá (máximo 2 reintentos).
       - Si la consulta devolvió error, leé el mensaje, corregí y reintentá.
-   e) RESPONDER con el resultado verificando, en lenguaje natural y claro. Si el dato
+   f) RESPONDER con el resultado verificando, en lenguaje natural y claro. Si el dato
       no existe o la consulta sigue fallando, decilo con honestidad.
-   f) NUNCA muestres datos personales de terceros por esta vía sin pasar el protocolo
+   g) NUNCA muestres datos personales de terceros por esta vía sin pasar el protocolo
       de verificación de identidad del punto 3.
 5. TONO: profesional, cálido y claro. Español de Argentina. Respuestas concisas con
    formato legible (negritas con **, listas cuando aporten). Montos en pesos argentinos.
@@ -154,7 +158,7 @@ def responder(sesion_id, pregunta):
     mensajes = _con_sistema(pregunta) + _recortar(sesion['mensajes'])
     intentos = 0
 
-    while intentos < 5:
+    while intentos < 6:
         intentos += 1
         try:
             resp = _cliente.chat.completions.create(
@@ -197,8 +201,9 @@ def responder(sesion_id, pregunta):
         sesion['mensajes'] = _recortar(sesion['mensajes'])
         return respuesta
 
-    return ('⚠️ La consulta requirió demasiadas búsquedas internas. '
-            'Reformulá la pregunta, por favor.')
+    return ('⚠️ No pude armar la respuesta con los datos disponibles. '
+            'Reformulá la pregunta con el dato puntual que necesitás '
+            '(ej: monto de hoy, un código, un período) y lo resuelvo.')
 
 
 def limpiar_sesion(sesion_id):

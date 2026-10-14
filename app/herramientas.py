@@ -195,6 +195,11 @@ def medios_pago(anio: int = None) -> dict:
     return _get('/api/recaudacion/medios', {'anio': anio})
 
 
+def cobros_del_dia() -> dict:
+    """Cobros de HOY discriminados: total, por tipo de boleta, partida y cobrador."""
+    return _get('/api/recaudacion/cobros-del-dia')
+
+
 def kpis_ejecutivos() -> dict:
     """KPIs ejecutivos consolidados (recaudación, deuda, gestión, compras, stock)."""
     return _get('/api/panel/kpis')
@@ -384,6 +389,18 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
+            'name': 'cobros_del_dia',
+            'description': 'Cobros de HOY ya discriminados: total (cobros y monto), anulados, '
+                           'pagos digitales, desglose por tipo de boleta, por partida presupuestaria '
+                           'y por cobrador. Usar SIEMPRE cuando pregunten cuánto se cobró hoy, '
+                           'cómo se compone el cobro del día o de dónde sale ese monto. '
+                           'NO intentes armar SQL para esto: usá esta herramienta.',
+            'parameters': {'type': 'object', 'properties': {}},
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'medios_pago',
             'description': 'Composición mensual de la recaudación del año: efectivo/caja, '
                            'depósito/cheque y pagos digitales (Mercado Pago y foto multas).',
@@ -529,6 +546,7 @@ _FUNCIONES = {
     'anulaciones': anulaciones,
     'colectores': colectores,
     'medios_pago': medios_pago,
+    'cobros_del_dia': cobros_del_dia,
     'kpis_ejecutivos': kpis_ejecutivos,
     'listar_tablas': listar_tablas,
     'columnas_tabla': columnas_tabla,
