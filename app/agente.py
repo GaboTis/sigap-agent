@@ -77,7 +77,9 @@ REGLAS ESTRICTAS:
       las columnas COBRADO de boletas y FPAGO de cobros suelen valer 0 (no filtrar por
       ellas); la deuda del padrón oficial está en las tablas DWH_Deudas_Items_AAAAMM
       (filtrar FechaActualizacion máxima por nomencla); NOMENCLA se guarda con
-      espacios de relleno (usar LIKE o RTRIM); expedientes se guardan por NUMERO y ANO.
+      espacios de relleno (usar LIKE o RTRIM); expedientes se guardan por NUMERO y ANO;
+      el DNI REAL de un contribuyente está en contribu.DNI (el campo DNIOCUIT guarda
+      un número viejo del padrón); CUIT para empresas en contribu.CUIT.
       SI LA PREGUNTA ES COMPUESTA (varios números/desgloses), usá ejecutar_consultas(sqls)
       con TODAS las consultas juntas en UNA llamada (máx. 6) en lugar de varias llamadas
       de ejecutar_consulta. Escribí las consultas directamente con estos esquemas
