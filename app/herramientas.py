@@ -166,8 +166,9 @@ def verificar_identidad(dni: int, nomenclatura: str, respuesta: str) -> dict:
     return resp.json()
 
 
-def buscar_contribuyente(q: str, limit: int = 5) -> dict:
-    """Busca contribuyentes en el padrón por nomenclatura o nombre."""
+def buscar_contribuyente(q: str, limit: int = 20) -> dict:
+    """Busca contribuyentes en el padrón por nomenclatura o nombre
+    (todas las palabras, en cualquier orden)."""
     d = _get('/api/contribuyentes/buscar', {'q': q, 'limit': limit})
     if not d.get('resultados'):
         return {'total': 0, 'mensaje': f'No se encontraron contribuyentes para "{q}".'}

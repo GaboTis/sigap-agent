@@ -18,6 +18,41 @@ _cliente = OpenAI(
     base_url=os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
 )
 _MODELO = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
+# Verificación de identidad: activa por defecto; IDENTIDAD_ACTIVA=0 → modo prueba
+# (muestra datos solo con DNI o nombre, sin pregunta de contraste).
+_IDENTIDAD_ACTIVA = os.getenv('IDENTIDAD_ACTIVA', '1') != '0'
+
+_PROTOCOLO_IDENTIDAD_ACTIVO = """\
+3. DATOS PERSONALES Y VERIFICACIÓN DE IDENTIDAD (protocolo obligatorio):
+   Antes de mostrar deuda o datos personales de un contribuyente, SIEMPRE:
+   a) Pedí el DNI del solicitante.
+   b) Llamá a buscar_por_dni(dni):
+      - 0 resultados → "Ese DNI no figura en el padrón. Podés acercarte a Rentas o revisar el número."
+      - 1 resultado → hacé UNA pregunta de contraste SIN revelar el dato:
+        "Para confirmar tu identidad: ¿cuál es la calle del domicilio registrado?"
+        (o el nombre del titular). Cuando el usuario responda, llamá a
+        verificar_identidad(dni, nomenclatura, respuesta). Si verificada=true →
+        mostrá la deuda (podés llamar deuda_contribuyente para el desglose).
+        Si verificada=false → negá los datos y sugerí acercarte a Rentas.
+      - Varios resultados → listá SOLO las nomenclaturas y barrios, pedile al usuario
+        que elija SU cuenta (nomenclatura), y recién entonces hacé la pregunta de
+        contraste sobre ESA cuenta y llamá a verificar_identidad con la nomenclatura
+        elegida. Actuá según verificada=true/false.
+   c) NUNCA muestres nombre completo, domicilio completo ni deuda ANTES de que el
+      usuario responda correctamente la pregunta de contraste.
+   d) Nunca muestres datos de terceros: si el DNI no corresponde al que pregunta,
+      no reveles nada.
+"""
+
+_PROTOCOLO_IDENTIDAD_PRUEBA = """\
+3. DATOS PERSONALES — MODO PRUEBA (verificación de identidad DESACTIVADA):
+   Podés mostrar deuda y datos personales de un contribuyente consultando SOLO
+   con DNI (buscar_por_dni) o con nombre/apellido (buscar_contribuyente), SIN
+   pregunta de contraste. Si hay varias cuentas, mostralas todas con su
+   nomenclatura, nombre y deuda (podés usar deuda_contribuyente para el detalle).
+   Aclarale al usuario que la verificación de identidad está desactivada
+   temporalmente por pruebas.
+"""
 
 _SISTEMA_BASE = """\
 Sos el asistente oficial de la Municipalidad de Rawson (San Juan, Argentina): un agente
@@ -44,25 +79,7 @@ REGLAS ESTRICTAS:
    Respondé con el detalle encontrado e incluí el enlace del sitio oficial cuando exista.
    Para AUTORIDADES y CONTACTO (intendente, gabinete, teléfonos, dirección) usá el
    conocimiento adjunto (Sitio Oficial — Autoridades Y Contacto).
-3. DATOS PERSONALES Y VERIFICACIÓN DE IDENTIDAD (protocolo obligatorio):
-   Antes de mostrar deuda o datos personales de un contribuyente, SIEMPRE:
-   a) Pedí el DNI del solicitante.
-   b) Llamá a buscar_por_dni(dni):
-      - 0 resultados → "Ese DNI no figura en el padrón. Podés acercarte a Rentas o revisar el número."
-      - 1 resultado → hacé UNA pregunta de contraste SIN revelar el dato:
-        "Para confirmar tu identidad: ¿cuál es la calle del domicilio registrado?"
-        (o el nombre del titular). Cuando el usuario responda, llamá a
-        verificar_identidad(dni, nomenclatura, respuesta). Si verificada=true →
-        mostrá la deuda (podés llamar deuda_contribuyente para el desglose).
-        Si verificada=false → negá los datos y sugerí acercarte a Rentas.
-      - Varios resultados → listá SOLO las nomenclaturas y barrios, pedile al usuario
-        que elija SU cuenta (nomenclatura), y recién entonces hacé la pregunta de
-        contraste sobre ESA cuenta y llamá a verificar_identidad con la nomenclatura
-        elegida. Actuá según verificada=true/false.
-   c) NUNCA muestres nombre completo, domicilio completo ni deuda ANTES de que el
-      usuario responda correctamente la pregunta de contraste.
-   d) Nunca muestres datos de terceros: si el DNI no corresponde al que pregunta,
-      no reveles nada.
+3. DATOS PERSONALES: {protocolo_identidad}
 4. HABLAR CON LA BASE DE DATOS (consultas SQL generadas por vos):
    Podés responder CUALQUIER pregunta sobre los datos de SIGAPP generando tu propia
    consulta SQL. Protocolo obligatorio:
@@ -105,6 +122,11 @@ REGLAS ESTRICTAS:
    legales o de cobro judicial, derivá a la oficina correspondiente de la municipalidad.
 7. SIEMPRE respondé en español.
 """
+
+# Ensamblar el protocolo de identidad según el modo (activo / prueba)
+_SISTEMA_BASE = _SISTEMA_BASE.format(
+    protocolo_identidad=_PROTOCOLO_IDENTIDAD_ACTIVO if _IDENTIDAD_ACTIVA
+    else _PROTOCOLO_IDENTIDAD_PRUEBA)
 
 # Sesiones en memoria: id → lista de mensajes (con límite).
 _sesiones = {}
