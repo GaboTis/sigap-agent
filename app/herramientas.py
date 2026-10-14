@@ -175,6 +175,26 @@ def ejecucion_presupuestaria(ejercicio: int = None, top: int = 6) -> dict:
     return _get('/api/recaudacion/ejecucion', {'ejercicio': ejercicio, 'top': top})
 
 
+def canales_recaudacion(anio: int = None) -> dict:
+    """Recaudación del año por canal (cajas, colectores, MP, agentes, banco)."""
+    return _get('/api/recaudacion/canales', {'anio': anio})
+
+
+def anulaciones(anio: int = None, limit: int = 20, mes: int = None) -> dict:
+    """Cobros anulados del año: por mes y últimos registros con motivo (filtro mes opcional)."""
+    return _get('/api/recaudacion/anulaciones', {'anio': anio, 'limit': limit, 'mes': mes})
+
+
+def colectores(anio: int = None) -> dict:
+    """Ranking de colectores: recaudación y deuda del padrón asignada."""
+    return _get('/api/recaudacion/colectores', {'anio': anio})
+
+
+def medios_pago(anio: int = None) -> dict:
+    """Composición mensual de la recaudación: efectivo, depósito/cheque, digital."""
+    return _get('/api/recaudacion/medios', {'anio': anio})
+
+
 def kpis_ejecutivos() -> dict:
     """KPIs ejecutivos consolidados (recaudación, deuda, gestión, compras, stock)."""
     return _get('/api/panel/kpis')
@@ -319,6 +339,65 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
+            'name': 'canales_recaudacion',
+            'description': 'Recaudación del año por canal de cobro: cajas, colectores, Mercado Pago, '
+                           'agentes (Pago Fácil/Rapipago), banco, foto multas y tesorería. '
+                           'Usar cuando preguntan cuánto se recaudó por cada canal o medio.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'anio': {'type': 'integer', 'description': 'Año (opcional, default actual)'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'anulaciones',
+            'description': 'Cobros anulados del año: totales por mes y últimos cobros anulados '
+                           'con motivo. Usar cuando preguntan por cobros anulados o devoluciones.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'anio': {'type': 'integer', 'description': 'Año (opcional)'},
+                    'limit': {'type': 'integer', 'description': 'Cantidad de registros (default 20)'},
+                    'mes': {'type': 'integer', 'description': 'Mes 1-12 para filtrar los últimos registros (opcional)'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'colectores',
+            'description': 'Ranking de colectores del año: recaudación por colector, cobros, '
+                           'contribuyentes asignados y deuda del padrón asignada a cada uno.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'anio': {'type': 'integer', 'description': 'Año (opcional)'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'medios_pago',
+            'description': 'Composición mensual de la recaudación del año: efectivo/caja, '
+                           'depósito/cheque y pagos digitales (Mercado Pago y foto multas).',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'anio': {'type': 'integer', 'description': 'Año (opcional)'},
+                },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'kpis_ejecutivos',
             'description': 'KPIs ejecutivos consolidados del municipio: recaudación, deuda del padrón, '
                            'expedientes en trámite, planes de pago, compras, proveedores y stock. '
@@ -446,6 +525,10 @@ _FUNCIONES = {
     'buscar_contribuyente': buscar_contribuyente,
     'recaudacion': recaudacion,
     'ejecucion_presupuestaria': ejecucion_presupuestaria,
+    'canales_recaudacion': canales_recaudacion,
+    'anulaciones': anulaciones,
+    'colectores': colectores,
+    'medios_pago': medios_pago,
     'kpis_ejecutivos': kpis_ejecutivos,
     'listar_tablas': listar_tablas,
     'columnas_tabla': columnas_tabla,
