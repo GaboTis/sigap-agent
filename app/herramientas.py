@@ -52,6 +52,15 @@ def ejecutar_consulta(sql: str) -> dict:
     return _post('/api/consulta/sql', {'sql': sql})
 
 
+def ejecutar_consultas(sqls: list) -> dict:
+    """Ejecuta VARIAS consultas SELECT (hasta 6) en una sola llamada batch.
+
+    Para preguntas compuestas: armá todas las consultas que necesites y
+    mandalas juntas; recibís los resultados etiquetados por índice.
+    """
+    return _post('/api/consulta/sql-batch', {'consultas': sqls})
+
+
 # ── Sitio oficial del municipio (municipioderawson.gob.ar) ────
 
 def ultimas_noticias(n: int = 5) -> dict:
@@ -473,6 +482,28 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
+            'name': 'ejecutar_consultas',
+            'description': 'Ejecuta VARIAS consultas SQL de SOLO LECTURA en una sola llamada '
+                           '(hasta 6). Usar para preguntas compuestas que requieren varios '
+                           'números a la vez (ej. hoy vs mismo día del año pasado, discriminado '
+                           'por tipo y por cobrador). Devuelve los resultados etiquetados por '
+                           'índice; si alguna falla, corregí solo esa y reintentá.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'sqls': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'description': 'Lista de consultas SELECT (máx. 6)',
+                    },
+                },
+                'required': ['sqls'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'ultimas_noticias',
             'description': 'Últimas noticias publicadas en el sitio oficial del municipio '
                            '(municipioderawson.gob.ar). Usar cuando preguntan por novedades, '
@@ -551,6 +582,7 @@ _FUNCIONES = {
     'listar_tablas': listar_tablas,
     'columnas_tabla': columnas_tabla,
     'ejecutar_consulta': ejecutar_consulta,
+    'ejecutar_consultas': ejecutar_consultas,
     'ultimas_noticias': ultimas_noticias,
     'buscar_sitio_municipal': buscar_sitio_municipal,
     'guia_tramites': guia_tramites,

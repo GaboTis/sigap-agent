@@ -72,14 +72,22 @@ REGLAS ESTRICTAS:
       - canales, colectores, anulaciones, medios → sus herramientas
    b) EXPLORAR: si no hay herramienta, usá listar_tablas(filtro) para localizar
       las tablas y columnas_tabla(tabla) para ver sus columnas.
-   c) GENERAR: escribí UNA consulta SELECT simple y correcta, con alias claros.
+   c) GENERAR: escribí las consultas SELECT simples y correctas, con alias claros.
       Consejos de datos reales: las fechas van como CAST('AAAAMMDD' AS datetime);
       las columnas COBRADO de boletas y FPAGO de cobros suelen valer 0 (no filtrar por
       ellas); la deuda del padrón oficial está en las tablas DWH_Deudas_Items_AAAAMM
       (filtrar FechaActualizacion máxima por nomencla); NOMENCLA se guarda con
       espacios de relleno (usar LIKE o RTRIM); expedientes se guardan por NUMERO y ANO.
-   d) EJECUTAR: llamá a ejecutar_consulta(sql). Solo SELECT/WITH, máximo 200 filas,
-      timeout 20 segundos.
+      SI LA PREGUNTA ES COMPUESTA (varios números/desgloses), usá ejecutar_consultas(sqls)
+      con TODAS las consultas juntas en UNA llamada (máx. 6) en lugar de varias llamadas
+      de ejecutar_consulta. Escribí las consultas directamente con estos esquemas
+      conocidos (sin explorar tablas): cobros(NROCOBRO, FECHA, TOTALGRAL, ANULADO,
+      COBRADOR, NOMENCLA, TIPOCOBRO) · cobritem(NROCOBRO, BOLETA, TIPO, TOTAL) ·
+      cobrpartid(nrocobro, partida, total) · boletas(NUMERO, ANO, MES, NOMENCLA, ANULA,
+      IMPORTE1, FECHAVTO1) · contribu(NOMENCLA, RAZONSOCI, DNIOCUIT, COLECTOR).
+      No uses ORDER BY en las consultas batch (se ordena solo por defecto).
+   d) EJECUTAR: llamá a ejecutar_consulta(sql) o ejecutar_consultas(sqls). Solo
+      SELECT/WITH, máximo 200 filas por consulta, timeout 20 segundos.
    e) VERIFICAR SIEMPRE el resultado antes de responder (obligatorio):
       - ¿Las columnas y filas devueltas responden exactamente lo que preguntaron?
       - ¿Los números son razonables (órdenes de magnitud, no vacíos inesperados)?
@@ -158,7 +166,7 @@ def responder(sesion_id, pregunta):
     mensajes = _con_sistema(pregunta) + _recortar(sesion['mensajes'])
     intentos = 0
 
-    while intentos < 6:
+    while intentos < 8:
         intentos += 1
         try:
             resp = _cliente.chat.completions.create(
@@ -188,7 +196,13 @@ def responder(sesion_id, pregunta):
             })
             for tc in msg.tool_calls:
                 nombre = tc.function.name
-                resultado = herramientas.ejecutar(nombre, tc.function.arguments)
+                try:
+                    resultado = herramientas.ejecutar(nombre, tc.function.arguments)
+                    logger.info(f'tool {nombre} args={tc.function.arguments[:200]} → '
+                                f'{str(resultado)[:200]}')
+                except Exception as e:
+                    logger.error(f'tool {nombre} FALLO: {e}')
+                    resultado = {'error': f'Error al ejecutar {nombre}: {str(e)[:200]}'}
                 mensajes.append({
                     'role': 'tool',
                     'tool_call_id': tc.id,
