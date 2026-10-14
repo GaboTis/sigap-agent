@@ -1,1 +1,1 @@
-"""sigap-agent — Experto SIGAP Rawson (LLM + herramientas + conocimiento)."""
+"""sigap-agent — Experto SIGAPP Rawson (LLM + herramientas + conocimiento)."""

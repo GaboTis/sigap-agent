@@ -1,4 +1,4 @@
-"""Experto SIGAP Rawson — API y chat web.
+"""Experto SIGAPP Rawson — API y chat web.
 
 Uso:
     uvicorn app.main:app --host 127.0.0.1 --port 8200
@@ -18,7 +18,7 @@ from app import agente, whatsapp
 
 load_dotenv()
 
-app = FastAPI(title='Experto SIGAP Rawson', version='0.2.0')
+app = FastAPI(title='Experto SIGAPP Rawson', version='0.2.0')
 
 
 class ChatIn(BaseModel):

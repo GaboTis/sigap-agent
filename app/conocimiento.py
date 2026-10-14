@@ -34,7 +34,7 @@ _DOCS_MUNICIPIO = [
 # Perfil institucional inyectado siempre en el prompt del agente.
 PERFIL_MUNICIPAL = """\
 Municipalidad de Rawson, provincia de San Juan, Argentina.
-SIGAP es el sistema de gestión tributaria y administrativa del municipio (561 tablas
+SIGAPP es el sistema de gestión tributaria y administrativa del municipio (561 tablas
 en SQL Server): boletas, cobros, planes de pago, certificados de ejecución, contribu
 (padrón de contribuyentes), expediente/expemovi (sistema de expedientes), sectmuni
 (sectores municipales), ordencpa/reciteso/proveedor (compras y pagos a proveedores),

@@ -34,17 +34,17 @@ def _post(ruta, body):
 # ── Consultas SQL a la base (agente "habla con la DB") ─────────
 
 def listar_tablas(filtro: str = '') -> dict:
-    """Lista tablas de la base SIGAP con su cantidad de filas."""
+    """Lista tablas de la base SIGAPP con su cantidad de filas."""
     return _get('/api/consulta/esquema', {'filtro': filtro})
 
 
 def columnas_tabla(tabla: str) -> dict:
-    """Columnas de una tabla de SIGAP (nombre, tipo, largo)."""
+    """Columnas de una tabla de SIGAPP (nombre, tipo, largo)."""
     return _get('/api/consulta/columnas', {'tabla': tabla})
 
 
 def ejecutar_consulta(sql: str) -> dict:
-    """Ejecuta una consulta SELECT (solo lectura) contra SIGAP.
+    """Ejecuta una consulta SELECT (solo lectura) contra SIGAPP.
 
     Límites: máx. 200 filas, timeout 20s, sin bloqueos. Si falla, devuelve
     el error para corregir la consulta y reintentar.
@@ -330,7 +330,7 @@ HERRAMIENTAS = [
         'type': 'function',
         'function': {
             'name': 'listar_tablas',
-            'description': 'Lista las tablas de la base SIGAP con su cantidad aproximada de filas '
+            'description': 'Lista las tablas de la base SIGAPP con su cantidad aproximada de filas '
                            '(las más grandes primero). Usar para localizar la tabla correcta antes '
                            'de escribir una consulta SQL.',
             'parameters': {

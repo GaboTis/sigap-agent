@@ -1,4 +1,4 @@
-"""Núcleo del Experto SIGAP Rawson — LLM DeepSeek + herramientas + conocimiento."""
+"""Núcleo del Experto SIGAPP Rawson — LLM DeepSeek + herramientas + conocimiento."""
 import json
 import logging
 import os
@@ -21,7 +21,7 @@ _MODELO = os.getenv('DEEPSEEK_MODEL', 'deepseek-chat')
 
 _SISTEMA_BASE = """\
 Sos el asistente oficial de la Municipalidad de Rawson (San Juan, Argentina): un agente
-experto en SIGAP, el sistema de gestión tributaria y administrativa del municipio, y en
+experto en SIGAPP, el sistema de gestión tributaria y administrativa del municipio, y en
 los trámites municipales.
 
 REGLAS ESTRICTAS:
@@ -64,7 +64,7 @@ REGLAS ESTRICTAS:
    d) Nunca muestres datos de terceros: si el DNI no corresponde al que pregunta,
       no reveles nada.
 4. HABLAR CON LA BASE DE DATOS (consultas SQL generadas por vos):
-   Podés responder CUALQUIER pregunta sobre los datos de SIGAP generando tu propia
+   Podés responder CUALQUIER pregunta sobre los datos de SIGAPP generando tu propia
    consulta SQL. Protocolo obligatorio:
    a) EXPLORAR: si no conocés las tablas, usá listar_tablas(filtro) para localizarlas
       y columnas_tabla(tabla) para ver sus columnas (nombre, tipo y largo).
