@@ -61,13 +61,11 @@ def ejecutar_consultas(sqls: list) -> dict:
     return _post('/api/consulta/sql-batch', {'consultas': sqls})
 
 
-def generar_planilla(titulo: str, sqls: list, nombre_archivo: str = '') -> dict:
-    """Genera una PLANILLA EXCEL (.xlsx) con los resultados de las consultas.
-
-    Ejecuta las consultas contra SIGAP (hasta 5.000 filas por consulta) y
-    arma el archivo con una hoja por consulta, encabezados y filtros.
-    Devuelve el enlace de descarga. Usar cuando el usuario pide un listado,
-    planilla o Excel de datos (ej. habilitaciones, deudas, cobros).
+def exportar_listado(titulo: str, sqls: list, nombre_archivo: str = '',
+                     formato: str = 'xlsx') -> dict:
+    """Genera una planilla descargable (EXCEL o PDF) con los resultados de las
+    consultas SQL. Ejecuta contra SIGAP (hasta 5.000 filas por consulta), una
+    hoja/sección por consulta. formato: 'xlsx' o 'pdf'. Devuelve el enlace.
     """
     from app import planillas as _planillas
     d = _post('/api/consulta/exportar', {'consultas': sqls})
@@ -78,11 +76,17 @@ def generar_planilla(titulo: str, sqls: list, nombre_archivo: str = '') -> dict:
         errores = [r.get('error') for r in d.get('resultados', []) if not r.get('ok')]
         return {'error': 'Ninguna consulta devolvió datos. ' + '; '.join(errores)[:200]}
     try:
-        info = _planillas.generar_planilla(titulo, resultados, nombre_archivo)
+        info = _planillas.generar_exporte(titulo, resultados, nombre_archivo, formato)
     except Exception as e:
         return {'error': f'No se pudo generar la planilla: {str(e)[:200]}'}
     info['titulo'] = titulo
+    info['formato'] = (formato or 'xlsx').lower()
     return info
+
+
+def generar_planilla(titulo: str, sqls: list, nombre_archivo: str = '') -> dict:
+    """Alias de exportar_listado con formato Excel (xlsx)."""
+    return exportar_listado(titulo, sqls, nombre_archivo, 'xlsx')
 
 
 # ── Sitio oficial del municipio (municipioderawson.gob.ar) ────
@@ -536,25 +540,31 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
-            'name': 'generar_planilla',
-            'description': 'Genera una PLANILLA EXCEL (.xlsx) descargable con los resultados de '
-                           'una o varias consultas SQL de SOLO LECTURA (hasta 5.000 filas por '
-                           'consulta; una hoja por consulta, con encabezados y filtros). Usar '
-                           'CUANDO el usuario pida un listado, planilla o Excel (ej. '
-                           'habilitaciones de comercio de un año, listado de deudas, cobros del '
-                           'mes). Armá las consultas SELECT necesarias y llamá una sola vez; '
-                           'después respondé con el enlace de descarga y un resumen de lo que '
-                           'contiene. NO muestres las miles de filas en el chat.',
+            'name': 'exportar_listado',
+            'description': 'Genera una planilla descargable — EXCEL (.xlsx) o PDF — con los '
+                           'resultados de una o varias consultas SQL de SOLO LECTURA (hasta '
+                           '5.000 filas por consulta; una hoja/sección por consulta, con '
+                           'encabezados). Usar CUANDO el usuario pida un listado, planilla, '
+                           'Excel, PDF o exportar datos (ej. recorrido de comercios por zonas, '
+                           'habilitaciones del año, deudas, cobros). Armá las consultas SELECT '
+                           'necesarias (UNA por zona/período) y llamá UNA sola vez; después '
+                           'respondé con el enlace de descarga y un resumen. NO vuelques las '
+                           'filas en el chat. Si piden PDF usá formato="pdf"; si no aclaran, '
+                           'xlsx.',
             'parameters': {
                 'type': 'object',
                 'properties': {
                     'titulo': {'type': 'string', 'description': 'Título del listado (ej. '
-                               '"Habilitaciones de comercio 2025-2026")'},
+                               '"Recorrido comercios colector 8888 por zonas")'},
                     'sqls': {'type': 'array', 'items': {'type': 'string'},
-                             'description': 'Consultas SELECT cuyos resultados van a la planilla'},
+                             'description': 'Consultas SELECT cuyos resultados van a la '
+                                            'planilla (una por zona/hoja)'},
                     'nombre_archivo': {'type': 'string',
                                        'description': 'Nombre del archivo (sin extensión, ej. '
-                                                      '"habilitaciones_2025_2026")'},
+                                                      '"recorrido_colector_8888")'},
+                    'formato': {'type': 'string', 'enum': ['xlsx', 'pdf'],
+                                'description': 'Formato de exportación: xlsx (Excel, default) '
+                                               'o pdf'},
                 },
                 'required': ['titulo', 'sqls'],
             },
@@ -666,6 +676,7 @@ _FUNCIONES = {
     'ejecutar_consulta': ejecutar_consulta,
     'ejecutar_consultas': ejecutar_consultas,
     'generar_planilla': generar_planilla,
+    'exportar_listado': exportar_listado,
     'ultimas_noticias': ultimas_noticias,
     'buscar_sitio_municipal': buscar_sitio_municipal,
     'guia_tramites': guia_tramites,

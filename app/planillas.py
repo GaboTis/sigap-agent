@@ -89,3 +89,82 @@ def generar_planilla(titulo, resultados, nombre_archivo):
         'hojas': len(wb.sheetnames),
         'filas': total_filas,
     }
+
+
+def generar_pdf(titulo, resultados, nombre_archivo):
+    """Escribe un .pdf con los resultados (una sección por consulta).
+
+    Tabla horizontal (landscape) si hay varias columnas; celda con salto de
+    línea si el texto no entra. Devuelve {archivo, url, paginas, filas}.
+    """
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
+                                    TableStyle)
+
+    if not resultados:
+        raise ValueError('No hay resultados para exportar.')
+
+    nombre = _nombre_seguro(nombre_archivo)
+    if nombre.lower().endswith('.xlsx'):
+        nombre = nombre[:-5] + '.pdf'
+    ruta = ruta_exportes() / nombre
+
+    estilos = getSampleStyleSheet()
+    total_cols = max((len(r.get('columnas', [])) for r in resultados), default=1)
+    horizontal = total_cols >= 6
+    doc = SimpleDocTemplate(
+        str(ruta), pagesize=landscape(A4) if horizontal else A4,
+        leftMargin=12 * mm, rightMargin=12 * mm, topMargin=12 * mm, bottomMargin=12 * mm,
+        title=titulo or 'Listado')
+
+    historia = []
+    historia.append(Paragraph(titulo or 'Listado', estilos['Title']))
+    historia.append(Spacer(1, 4 * mm))
+
+    total_filas = 0
+    for res in resultados:
+        columnas = [str(c or '') for c in res.get('columnas', [])]
+        filas = res.get('filas', [])
+        if not columnas:
+            continue
+        estilo_tit = estilos['Heading3']
+        historia.append(Paragraph(f'Zona {res.get("indice", len(historia))} '
+                                  f'— {len(filas)} comercios', estilo_tit))
+        historia.append(Spacer(1, 2 * mm))
+        datos = [columnas] + [[Paragraph(str(v), estilos['BodyText']) for v in fila]
+                              for fila in filas]
+        ancho_col = doc.width / len(columnas)
+        tabla = Table(datos, colWidths=[ancho_col] * len(columnas), repeatRows=1)
+        tabla.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E3A8A')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTSIZE', (0, 0), (-1, 0), 7.5),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+            ('GRID', (0, 0), (-1, -1), 0.3, colors.HexColor('#CBD5E1')),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 3),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')]),
+        ]))
+        historia.append(tabla)
+        historia.append(Spacer(1, 6 * mm))
+        total_filas += len(filas)
+
+    doc.build(historia)
+    return {
+        'archivo': nombre,
+        'url': f'{_BASE_URL}/exportes/{nombre}',
+        'paginas': doc.page,
+        'filas': total_filas,
+    }
+
+
+def generar_exporte(titulo, resultados, nombre_archivo, formato='xlsx'):
+    """Genera la planilla en el formato pedido: 'xlsx' (Excel) o 'pdf'."""
+    if (formato or 'xlsx').lower() == 'pdf':
+        return generar_pdf(titulo, resultados, nombre_archivo)
+    return generar_planilla(titulo, resultados, nombre_archivo)
