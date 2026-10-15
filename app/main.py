@@ -12,13 +12,18 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import agente, whatsapp
+from app import agente, planillas, whatsapp
 
 load_dotenv()
 
 app = FastAPI(title='Experto SIGAPP Rawson', version='0.2.0')
+
+# Descarga de planillas generadas por el agente
+app.mount('/exportes', StaticFiles(directory=str(planillas.ruta_exportes())),
+          name='exportes')
 
 
 class ChatIn(BaseModel):
