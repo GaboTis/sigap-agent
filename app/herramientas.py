@@ -74,8 +74,15 @@ def buscar_sitio_municipal(consulta: str, n: int = 6) -> dict:
 
 
 def guia_tramites(n: int = 10) -> dict:
-    """Lista la guía de trámites municipales del sitio oficial."""
+    """Lista la guía de trámites municipales del sitio oficial (sección trámites)."""
     return sitio_municipal.guia_tramites(n)
+
+
+def detalle_tramite(consulta: str) -> dict:
+    """Detalle completo de un trámite municipal: requisitos, documentación,
+    pasos, costo, dónde y cuándo. Fuente: la sección de TRÁMITES del sitio
+    oficial (municipioderawson.gob.ar/tramite/...). NO usa noticias."""
+    return sitio_municipal.detalle_tramite(consulta)
 
 
 def licitaciones(n: int = 5) -> dict:
@@ -538,13 +545,36 @@ HERRAMIENTAS = [
         'type': 'function',
         'function': {
             'name': 'guia_tramites',
-            'description': 'Lista la guía de trámites municipales del sitio oficial. Usar cuando '
-                           'preguntan qué trámites existen o dónde hacer un trámite municipal.',
+            'description': 'Lista la guía de trámites municipales del sitio oficial (sección '
+                           'TRÁMITES de municipioderawson.gob.ar). Usar cuando preguntan qué '
+                           'trámites existen o dónde hacer un trámite municipal. Para explicar '
+                           'CÓMO hacer un trámite (requisitos, pasos, costo) usá detalle_tramite, '
+                           'NUNCA las noticias.',
             'parameters': {
                 'type': 'object',
                 'properties': {
                     'n': {'type': 'integer', 'description': 'Cantidad de trámites (default 10)'},
                 },
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'detalle_tramite',
+            'description': 'Detalle completo de UN trámite municipal: requisitos, documentación, '
+                           'pasos a seguir, costo, dónde y cuándo se realiza. Fuente exclusiva: la '
+                           'sección de TRÁMITES del sitio oficial (municipioderawson.gob.ar/tramite/). '
+                           'Usar SIEMPRE que pregunten cómo hacer un trámite o qué necesitan para un '
+                           'trámite. NO usar noticias ni otra fuente para explicar trámites.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'consulta': {'type': 'string',
+                                 'description': 'Nombre del trámite (ej. "libre deuda", '
+                                                '"habilitación comercio", "cambio de titularidad")'},
+                },
+                'required': ['consulta'],
             },
         },
     },
@@ -587,6 +617,7 @@ _FUNCIONES = {
     'ultimas_noticias': ultimas_noticias,
     'buscar_sitio_municipal': buscar_sitio_municipal,
     'guia_tramites': guia_tramites,
+    'detalle_tramite': detalle_tramite,
     'licitaciones': licitaciones,
 }
 

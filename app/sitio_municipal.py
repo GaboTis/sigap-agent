@@ -23,6 +23,18 @@ def _limpiar(texto):
     return ' '.join(t.split())
 
 
+def _texto_pagina(html_texto, max_len=2600):
+    """Extrae el texto útil de una página: sin scripts/estilos/menús ni blobs JSON."""
+    t = re.sub(r'<(script|style|noscript|nav|header|footer|form)[^>]*>.*?</\1>', ' ',
+               html_texto, flags=re.S | re.I)
+    # quitar blobs JSON embebidos (ej. nomenclaturas del buscador del sitio)
+    t = re.sub(r'\{"[^"]*":\[[^\n]*?\]\s*(?:,"[^"]*":\[[^\n]*?\]\s*)*\}', ' ', t)
+    t = re.sub(r'<[^>]+>', '\n', t)
+    t = html.unescape(t).replace('\xa0', ' ')
+    lineas = [' '.join(l.split()) for l in t.splitlines() if ' '.join(l.split())]
+    return '\n'.join(lineas)[:max_len]
+
+
 def _titulo(d):
     """Título de un resultado WP: string plano (Gobierno Abierto) u objeto rendered."""
     t = d.get('title', '')
@@ -170,3 +182,57 @@ def guia_tramites(n=10):
         if len(tramites) >= n:
             break
     return {'total': len(tramites), 'tramites': tramites}
+
+
+def detalle_tramite(consulta):
+    """Detalle completo de un trámite municipal (requisitos, pasos, costo,
+    dónde y cuándo) extraído de su página oficial en la sección de trámites.
+
+    NO usa noticias: la fuente es /tramite/<slug>/ de municipioderawson.gob.ar.
+    """
+    consulta = _limpiar(consulta)
+    if len(consulta) < 3:
+        return {'error': 'Indicá qué trámite querés consultar (ej. libre deuda, habilitación).'}
+    guia = guia_tramites(25)
+    if 'error' in guia:
+        return guia
+    tramites = guia.get('tramites', [])
+    if not tramites:
+        return {'error': 'No se pudo cargar la guía de trámites del sitio municipal.'}
+    q = consulta.lower()
+    # puntuar: título contiene la consulta; si contiene las palabras, suma
+    puntajes = []
+    for i, t in enumerate(tramites):
+        titulo = t['titulo'].lower()
+        pts = 0
+        if q in titulo:
+            pts += 100
+        palabras = [p for p in q.split() if len(p) > 3]
+        if palabras:
+            pts += sum(3 for p in palabras if p in titulo)
+        if pts > 0:
+            puntajes.append((pts, i))
+    if not puntajes:
+        return {'error': f'No encontré "{consulta}" en la guía de trámites. '
+                         f'Probá con otro nombre (guia_tramites() lista los disponibles).'}
+    puntajes.sort(key=lambda x: -x[0])
+    elegido = tramites[puntajes[0][1]]
+
+    try:
+        resp = httpx.get(elegido['enlace'], headers=_UA, timeout=_TIMEOUT)
+        resp.raise_for_status()
+    except httpx.HTTPError as e:
+        return {'error': f'No se pudo abrir la página del trámite: {str(e)[:150]}'}
+    m = re.search(r'<title>([^<]+)</title>', resp.text)
+    titulo = _limpiar(m.group(1)) if m else elegido['titulo']
+    if 'Municipalidad de Rawson' in titulo:
+        titulo = titulo.split('Municipalidad de Rawson')[0].strip(' –-')
+    contenido = _texto_pagina(resp.text)
+    if len(contenido) < 40:
+        return {'error': 'La página del trámite no tiene contenido extraíble.'}
+    return {
+        'titulo': titulo or elegido['titulo'],
+        'enlace': elegido['enlace'],
+        'contenido': contenido,
+        'fuente': 'Guía de Trámites — municipioderawson.gob.ar (sección trámites)',
+    }
