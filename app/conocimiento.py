@@ -44,6 +44,20 @@ general), MA (maquinaria), PT (patentes), JF (jubilados/familia), DC (derechos).
 Los expedientes se identifican como NUMERO-LETRA/AÑO (ej. 3540-S-2026) y sus estados
 son: EN CURSO, PAGADO/CANCELADO, CERRADO y ARCHIVO. El recorrido entre sectores queda
 registrado en expemovi con fecha, usuario y sector de origen/destino.
+
+RÉGIMEN DE CONTRATACIONES Y COMPRAS (tabla SIGAP: fpago — cada forma de compra tiene
+rango DESDE/HASTA y su norma en NORMALEGAL). Régimen vigente actualizado por
+O.861-I(3A)-D1708/25 (administración general) y O.861-I(3B)-D1708/25 (obras y
+servicios públicos):
+- Contratación/compra DIRECTA general: desde $0,01 hasta $20.000.000 (código 293)
+- Compulsa abreviada: desde $20.000.000 hasta $30.000.000 (obras: hasta $40.000.000)
+- Licitación privada: hasta $40.000.000 (obras: hasta $59.000.000)
+- Licitación pública: montos mayores, sin tope
+- Compra directa de bienes de capital, combustibles y lubricantes: hasta $20.000.000
+Existen excepciones puntuales (Ord. 683-I-23 art. 14, ley 2000-A) con montos mayores;
+verificar el caso puntual en fpago. Para confirmar el dato EXACTO en el sistema,
+consultar: SELECT codigo, DESCRIPCION, DESDE, HASTA, NORMALEGAL FROM fpago
+WHERE DESCRIPCION LIKE '%DIRECTA%' AND (NORMALEGAL LIKE '%1708%' OR NORMALEGAL LIKE '%861%')
 """
 
 _STOPWORDS = {
