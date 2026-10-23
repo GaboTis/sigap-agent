@@ -29,6 +29,7 @@ app.mount('/exportes', StaticFiles(directory=str(planillas.ruta_exportes())),
 class ChatIn(BaseModel):
     mensaje: str
     sesion_id: str | None = None
+    modo: str | None = None
 
 
 @app.get('/')
@@ -77,7 +78,8 @@ def chat(body: ChatIn, request: Request):
         return JSONResponse(status_code=400, content={'error': 'Mensaje demasiado largo'})
 
     sesion_id = (body.sesion_id or '').strip() or uuid.uuid4().hex[:12]
-    respuesta = agente.responder(sesion_id, mensaje)
+    modo = body.modo if body.modo in ('full', 'edit', 'visor') else None
+    respuesta = agente.responder(sesion_id, mensaje, modo)
     return {'sesion_id': sesion_id, 'respuesta': respuesta}
 
 

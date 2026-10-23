@@ -250,6 +250,19 @@ def kpis_ejecutivos() -> dict:
     return _get('/api/panel/kpis')
 
 
+# ── Herramientas por modo de acceso ─────────────────────────
+# 'visor' = solo consultas (sin generar planillas/exportes)
+_NOMBRES_EXPORTACION = {'exportar_listado', 'generar_planilla'}
+
+
+def herramientas_para(modo=None):
+    """Herramientas disponibles según el modo de acceso del canal."""
+    if modo == 'visor':
+        return [h for h in HERRAMIENTAS
+                if h.get('function', {}).get('name') not in _NOMBRES_EXPORTACION]
+    return HERRAMIENTAS
+
+
 # ── Esquemas para function calling (OpenAI/DeepSeek) ──────────
 HERRAMIENTAS = [
     {

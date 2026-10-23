@@ -169,10 +169,15 @@ _uso = {}
 _uso_lock = threading.Lock()
 
 
-def _con_sistema(pregunta):
+def _con_sistema(pregunta, modo=None):
     """Construye la lista de mensajes con sistema + conocimiento relevante."""
     contexto = conocimiento.buscar_conocimiento(pregunta, top=2)
     sistema = _SISTEMA_BASE + '\n\n' + conocimiento.PERFIL_MUNICIPAL
+    if modo == 'visor':
+        sistema += ('\n\n## RESTRICCIÓN DE ACCESO (modo visor)\n'
+                    'Este canal es de SOLO CONSULTA: respondé con la información '
+                    'pedida. NO generes, ofrezcas ni describas planillas, exportes '
+                    'o archivos (Excel/PDF) en este canal.')
     if contexto:
         sistema += ('\n\n## CONOCIMIENTO MUNICIPAL RELEVANTE PARA ESTA PREGUNTA\n'
                     + '\n\n'.join(contexto))
@@ -210,15 +215,19 @@ def _recortar(mensajes):
     return mensajes
 
 
-def responder(sesion_id, pregunta):
-    """Procesa un mensaje del usuario y devuelve la respuesta del agente."""
+def responder(sesion_id, pregunta, modo=None):
+    """Procesa un mensaje del usuario y devuelve la respuesta del agente.
+
+    modo: 'full' | 'edit' | 'visor' — limita las herramientas disponibles
+    ('visor' deja afuera la generación de planillas/exportes)."""
     if not _limitar_uso(sesion_id or 'anon'):
         return '⚠️ Estás enviando mensajes muy rápido. Esperá un minuto y volvé a intentar.'
 
     sesion = _obtener_sesion(sesion_id)
     sesion['mensajes'].append({'role': 'user', 'content': pregunta})
 
-    mensajes = _con_sistema(pregunta) + _recortar(sesion['mensajes'])
+    mensajes = _con_sistema(pregunta, modo) + _recortar(sesion['mensajes'])
+    tools = herramientas.herramientas_para(modo)
     intentos = 0
 
     while intentos < 8:
@@ -227,7 +236,7 @@ def responder(sesion_id, pregunta):
             resp = _cliente.chat.completions.create(
                 model=_MODELO,
                 messages=mensajes,
-                tools=herramientas.HERRAMIENTAS,
+                tools=tools,
                 temperature=0.3,
             )
         except Exception as e:
