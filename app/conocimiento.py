@@ -58,6 +58,15 @@ Existen excepciones puntuales (Ord. 683-I-23 art. 14, ley 2000-A) con montos may
 verificar el caso puntual en fpago. Para confirmar el dato EXACTO en el sistema,
 consultar: SELECT codigo, DESCRIPCION, DESDE, HASTA, NORMALEGAL FROM fpago
 WHERE DESCRIPCION LIKE '%DIRECTA%' AND (NORMALEGAL LIKE '%1708%' OR NORMALEGAL LIKE '%861%')
+
+INTERESES POR MORA (tabla tipocontri, columnas INTERESRESAR/INTERESVALORES/
+INTERESPLANPAGO, INTERESTIPO='D' = diario). Tasas mensuales vigentes por tipo:
+IM, CO, CM, CG y PN: 15% · DC y JF: 10% · PT: 6,6% · MA: 0%.
+La deuda de una boleta = IMPORTE NOMINAL + interés devengado desde el vencimiento
+hasta hoy − descuentos (pago en término, jubilados). La deuda total incluye además
+planes de pago (cuotas menos lo pagado), certificados de ejecución y notas de crédito
+en contra. El portal de pagos (municipioonline.com.ar, m=rawson) muestra ese mismo
+cálculo del motor SIGAP: columnas IMPORTE NOMINAL, INTERES, DTO y TOTAL por boleta.
 """
 
 _STOPWORDS = {
