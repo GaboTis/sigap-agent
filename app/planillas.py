@@ -14,6 +14,18 @@ logger = logging.getLogger('sigap.planillas')
 _EXPORTES = Path(__file__).resolve().parent.parent / 'exportes'
 _BASE_URL = 'http://127.0.0.1:8200'
 
+# Caracteres de control que openpyxl NO acepta en celdas (los datos viejos de
+# SIGAP los traen embebidos en MOTIVO/TEMA, ej. \x05).
+_CONTROL = re.compile(r'[\x00-\x08\x0b-\x0c\x0e-\x1f]')
+
+
+def _limpiar(val):
+    """Convierte cualquier valor a texto limpio apto para Excel."""
+    if val is None:
+        return ''
+    s = str(val)
+    return _CONTROL.sub(' ', s)
+
 
 def ruta_exportes():
     _EXPORTES.mkdir(parents=True, exist_ok=True)
@@ -66,9 +78,9 @@ def generar_planilla(titulo, resultados, nombre_archivo):
             celda.font = Font(bold=True, color='FFFFFF')
             celda.fill = PatternFill('solid', fgColor='1E3A8A')
             celda.alignment = Alignment(vertical='center')
-        # Filas
+        # Filas (sanitizadas: los datos viejos de SIGAP traen caracteres de control)
         for fila in filas:
-            hoja.append(list(fila))
+            hoja.append([_limpiar(v) for v in fila])
         total_filas += len(filas)
         # Ancho de columnas automático (acotado)
         for col in range(1, len(columnas) + 1):
@@ -134,7 +146,7 @@ def generar_pdf(titulo, resultados, nombre_archivo):
         historia.append(Paragraph(f'Zona {res.get("indice", len(historia))} '
                                   f'— {len(filas)} comercios', estilo_tit))
         historia.append(Spacer(1, 2 * mm))
-        datos = [columnas] + [[Paragraph(str(v), estilos['BodyText']) for v in fila]
+        datos = [columnas] + [[Paragraph(_limpiar(v), estilos['BodyText']) for v in fila]
                               for fila in filas]
         ancho_col = doc.width / len(columnas)
         tabla = Table(datos, colWidths=[ancho_col] * len(columnas), repeatRows=1)

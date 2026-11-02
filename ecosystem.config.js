@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'sigap-agent',
     script: 'C:\\Users\\User\\Documents\\CODE\\sigap-agent\\venv\\Scripts\\uvicorn.exe',
-    args: 'app.main:app --host 127.0.0.1 --port 8200',
+    args: 'app.main:app --host 127.0.0.1 --port 8225',
     cwd: 'C:\\Users\\User\\Documents\\CODE\\sigap-agent',
     interpreter: 'none',
     instances: 1,

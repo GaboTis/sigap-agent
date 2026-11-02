@@ -42,8 +42,78 @@ stock, partidas presupuestarias y snapshots DWH del padrón de deuda (uno por me
 Tipos de contribuyente: IM (inmuebles), CO (comercios), CM (cementerio), CG (comercio
 general), MA (maquinaria), PT (patentes), JF (jubilados/familia), DC (derechos).
 Los expedientes se identifican como NUMERO-LETRA/AÑO (ej. 3540-S-2026) y sus estados
-son: EN CURSO, PAGADO/CANCELADO, CERRADO y ARCHIVO. El recorrido entre sectores queda
-registrado en expemovi con fecha, usuario y sector de origen/destino.
+son: EN CURSO (códigos E e I), PAGADO/CANCELADO (P), CERRADO (C) y ARCHIVO (A).
+El recorrido entre sectores queda registrado en expemovi con fecha, usuario y sector
+de origen/destino.
+LISTADOS DE EXPEDIENTES: cuando pidan un LISTADO (ej. "expedientes de contratos en
+curso", "los más antiguos", "cuántos hay de obra pública"), usar SIEMPRE la
+herramienta listar_expedientes: el TEMA se filtra sobre MOTIVO del expediente
+(ej. "contrat" cubre contratos, contratación, contrataciones; probar también
+variantes cortas: "licit", "obra", "plan de pago"). Por defecto muestra EN CURSO
+ordenados por ANTIGÜEDAD (fecha de inicio más vieja primero; las fechas sin cargar
+aparecen al final como "sin fecha"). Si piden TODOS los estados → estado="todos".
+Para EXPORTAR A EXCEL un listado de expedientes usar exportar_listado con una
+consulta como:
+  SELECT NUMERO, LETRA, ANO, FECHAINICIO, MOTIVO, TIPOEXPEDIENTE, ESTADO,
+         SECTACTUAL, INICIADOR
+  FROM expediente
+  WHERE ANULADO=0 AND ESTADO IN ('E','I') AND MOTIVO LIKE '%CONTRAT%'
+  ORDER BY FECHAINICIO ASC
+(ajustar filtro MOTIVO y ESTADO al pedido; con LIMIT se acota si lo piden).
+
+ORÁCULO DE LA BASE DE DATOS — cómo responder CUALQUIER pregunta de datos:
+1) Si la pregunta menciona un TEMA (gastos, cobros, pagos, compras, deuda,
+   expedientes, proveedores…), primero usar buscar_esquema(tema) para ubicar la
+   tabla correcta (devuelve qué es cada tabla y sus columnas clave).
+2) Confirmar columnas con esquema_tabla(tabla) si hay dudas.
+3) Ejecutar con ejecutar_consulta o ejecutar_consultas (batch para varios números).
+   Reglas de SQL: SIEMPRE filtrar ANULADO=0 cuando la tabla tenga esa columna;
+   acotar fechas (ej. FECHA>='2026-10-01'); TOP 50 para listados; para resultados
+   ORDENADOS usar el patrón: SELECT TOP 50 * FROM (SELECT TOP 100000 ... ORDER BY X) t.
+4) Responder con los NÚMEROS REALES devueltos, en tabla cuando haya varios, con
+   la fuente (tabla). Si la DB no tiene el dato, decirlo claramente y sugerir qué
+   sí se puede consultar. Nunca inventar cifras.
+Mapa rápido de tablas por dominio:
+- DEUDAS: boletas (emitidas), inticomp (intereses), planpago/plpgcuot (planes),
+  certejec/certejcomp (certificados de ejecución), intima, libredeuda, DWH_Deudas_Items_*
+  (foto mensual del padrón — la deuda oficial por contribuyente se pide con
+  deuda_contribuyente, no con SQL).
+- COBROS/RECAUDACIÓN: cobros (cada cobro, TOTALGRAL), cobritem (boletas pagadas),
+  recibo, cobrfpag (medios de pago: FPAGO, cheques/tarjetas), cobrosweb (web/MP),
+  saldoscaja. Colector=COBRADOR, cajero=CAJERO.
+- PAGOS/TESORERÍA: ordenpago (órdenes de pago), reciteso (recibos de tesorería),
+  cheques, depositos, anticipos.
+- CONTABILIDAD/COMPRAS: ordencpa+ocpaitem (órdenes de compra), proveedor,
+  factprove/factuprov (facturas de proveedores), fpago (formas de compra, catálogo
+  con rangos y normas), partidas (presupuesto: IMPORTEINICIAL/SALDOACTUAL/PREVENTPTE/
+  AFECTACPTE/DEFINITPTE/MANDPAGPTE), parteegre (gastos imputados), parteingre
+  (ingresos imputados), imputdef/imputprev, articulo, fpgespcomp (comprobantes de
+  gastos), anticipos, asientos (contabilidad formal casi sin carga).
+- EXPEDIENTES: expediente (estado E/I en curso), expemovi (recorrido),
+  estaexpe/tipoexpe/sectmuni (catálogos).
+- PADRÓN: contribu (RAZONSOCI, DNI, CUIT, domicilio), datospers (tel/mail),
+  persona/personajuridica.
+Recetas frecuentes:
+- "cuánto se recaudó hoy": SELECT SUM(TOTALGRAL) FROM cobros WHERE ANULADO=0 AND FECHA>=CONVERT(date,GETDATE())
+- "recaudado por medio de pago": SELECT FPAGO, SUM(TOTALGRAL) FROM cobros WHERE ANULADO=0 AND FECHA>='…' GROUP BY FPAGO (JOIN fpago por DESCRIPCION).
+- "por colector": SELECT COBRADOR, COUNT(*), SUM(TOTALGRAL) FROM cobros … GROUP BY COBRADOR.
+- "cuánto pagamos a proveedores": SELECT SUM(TOTAL) FROM ordenpago WHERE ANULADO=0 AND FECHA>='…' (o reciteso.IMPORTE).
+- "gastos del mes": SELECT SUM(IMPORTE) FROM parteegre WHERE NROPARTE=… (parte mensual) o por CONCEPTO GROUP BY.
+- "estado del presupuesto": SELECT CUENTA, DESCRIPCION, IMPORTEINICIAL, SALDOACTUAL FROM partidas WHERE ANO=2026.
+
+VENCIMIENTOS DE BOLETAS (esquema de la tabla boletas):
+- Cada boleta tiene hasta 3 vencimientos embebidos: FECHAVTO1/IMPORTE1 (base,
+  sin recargo), FECHAVTO2/IMPORTE2/RECARGO2/TASA2, FECHAVTO3/IMPORTE3/RECARGO3/
+  TASA3 (la columna FECHAVTO0/IMPORTE0/DESCTO0 es el pago adelantado con descuento).
+- Recargo del vencimiento = IMPORTE1 × (TASA/100) × días desde FECHAVTO1.
+  TASA2=TASA3=0.150 → 0,15% diario (≈4,5% mensual) de recargo escalonado,
+  distinto del interés resarcitorio (tipocontriinteresas: 10% mensual antes de
+  2017, 15% mensual desde 2017; códigos IP/PP/R/V).
+- CUOTA MENSUAL (TIPOBOLETA='P', UNICACUOTA=0): 2023-2024 traía 3 vencimientos
+  (VTO2 a los ~6-7 días, VTO3 ~7 días después). Desde 2025 el VTO3 se dejó de
+  emitir: hoy tiene 2 vencimientos (base y recargo).
+- CUOTA ANUAL (UNICACUOTA=1, MES=1): UN SOLO vencimiento (FECHAVTO1), sin
+  recargos VTO2/VTO3. Son las tasas anuales (ej. concesiones de cementerio CM).
 
 RÉGIMEN DE CONTRATACIONES Y COMPRAS (tabla SIGAP: fpago — cada forma de compra tiene
 rango DESDE/HASTA y su norma en NORMALEGAL). Régimen vigente actualizado por

@@ -132,6 +132,33 @@ def buscar_expediente(q: str, limit: int = 5) -> dict:
     return {'total': d['total'], 'resultados': resumen}
 
 
+def buscar_esquema(q: str = '') -> dict:
+    """Diccionario de datos de SIGAP: busca la tabla correcta por tema.
+    Usar SIEMPRE primero ante preguntas de datos (deudas, cobros, pagos,
+    contabilidad, expedientes, padrón) para ubicar la tabla adecuada."""
+    d = _get('/api/esquema/buscar', {'q': q})
+    if not d.get('tablas'):
+        return {'total': 0, 'mensaje': f'No encontré tablas para "{q}". Probá con otro término.'}
+    return {'total': d['total'], 'dominio': d.get('dominio_detectado'),
+            'tablas': [{'tabla': t['tabla'], 'dominio': t['dominio'],
+                        'descripcion': t['descripcion'], 'claves': t['claves']}
+                       for t in d['tablas']]}
+
+
+def esquema_tabla(tabla: str) -> dict:
+    """Columnas reales + muestra de una tabla (para armar el SQL correcto)."""
+    d = _get('/api/esquema/tabla', {'tabla': tabla})
+    if d.get('error'):
+        return {'error': d['error']}
+    resp = {'tabla': d['tabla'], 'columnas': [c['nombre'] for c in d.get('columnas', [])]}
+    if d.get('diccionario'):
+        resp['descripcion'] = d['diccionario']['descripcion']
+        resp['claves'] = d['diccionario']['claves']
+    if d.get('muestra'):
+        resp['muestra'] = d['muestra'][:2]
+    return resp
+
+
 def detalle_expediente(numero: int, ano: int = None, letra: str = None) -> dict:
     """Detalle completo de un expediente con su recorrido entre sectores."""
     d = _get('/api/expedientes/detalle', {'numero': numero, 'ano': ano, 'letra': letra})
@@ -164,6 +191,27 @@ def analitica_expedientes() -> dict:
         'carga_por_sector': d['carga_por_sector'][:8],
         'mas_demorados': d['mas_demorados'][:5],
     }
+
+
+def listar_expedientes(tema: str = '', estado: str = 'en_curso', limite: int = 30) -> dict:
+    """Listado filtrable de expedientes ordenado por ANTIGÜEDAD (más viejos primero).
+
+    - tema: texto del asunto (ej. 'contrat' para expedientes de contratos/contrataciones).
+    - estado: 'en_curso' (default, incluye E e I), 'todos', 'pagado', 'cerrado', 'archivo'.
+    """
+    d = _get('/api/expedientes/listar', {'tema': tema, 'estado': estado, 'limite': limite})
+    if not d.get('resultados'):
+        return {'total': 0, 'mensaje': f'No hay expedientes que coincidan con el filtro.'}
+    resumen = [{
+        'expediente': r['expediente'],
+        'fecha_inicio': r['fecha_inicio'] or 'sin fecha',
+        'estado': r['estado_desc'],
+        'tipo': r['tipo'],
+        'sector_actual': r['sector_actual'],
+        'motivo': r['motivo'][:110],
+    } for r in d['resultados']]
+    return {'total': d['total'], 'limite': d['limite'],
+            'filtros': d['filtros'], 'resultados': resumen}
 
 
 def deuda_contribuyente(codigo: str) -> dict:
@@ -284,6 +332,38 @@ HERRAMIENTAS = [
     {
         'type': 'function',
         'function': {
+            'name': 'buscar_esquema',
+            'description': 'DICCIONARIO DE DATOS: busca las tablas de SIGAP por tema o sinónimos '
+                           '(deudas, cobros, pagos, contabilidad/gastos, expedientes, padrón). '
+                           'Devuelve QUÉ ES cada tabla y sus columnas clave. Usar SIEMPRE primero '
+                           'ante una pregunta de datos para ubicar la tabla correcta.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'q': {'type': 'string', 'description': 'Tema a buscar (ej. "gastos", "cobros del día", "pagos a proveedores", "deuda")'},
+                },
+                'required': ['q'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'esquema_tabla',
+            'description': 'Columnas reales y muestra de UNA tabla de SIGAP. Usar para confirmar '
+                           'nombres de columnas antes de ejecutar una consulta SQL.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tabla': {'type': 'string', 'description': 'Nombre exacto de la tabla'},
+                },
+                'required': ['tabla'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'detalle_expediente',
             'description': 'Detalle completo de un expediente: estado, sector actual, días de tramitación '
                            'y recorrido completo entre sectores. Usar cuando preguntan "dónde está" o '
@@ -307,6 +387,26 @@ HERRAMIENTAS = [
                            'backlog, resolución por tipo y carga por sector. Para preguntas de gestión '
                            'o del personal municipal.',
             'parameters': {'type': 'object', 'properties': {}},
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'listar_expedientes',
+            'description': 'Listado filtrable de expedientes ordenados por ANTIGÜEDAD (más viejos '
+                           'primero). Filtra por TEMA del asunto (ej. tema="contrat" para expedientes '
+                           'de contratos/contrataciones) y por ESTADO (en_curso, pagado, cerrado, '
+                           'archivo, todos). Usar cuando piden listados: "expedientes de X en curso", '
+                           '"los más antiguos", "cuántos hay de Y".',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tema': {'type': 'string', 'description': 'Texto del asunto a filtrar (ej. "contrat", "obra", "licitación"). Vacío = sin filtro.'},
+                    'estado': {'type': 'string', 'description': "en_curso (default) | todos | pagado | cerrado | archivo"},
+                    'limite': {'type': 'integer', 'description': 'Cantidad de resultados (1-500, default 30)'},
+                },
+                'required': [],
+            },
         },
     },
     {
@@ -672,6 +772,9 @@ _FUNCIONES = {
     'buscar_expediente': buscar_expediente,
     'detalle_expediente': detalle_expediente,
     'analitica_expedientes': analitica_expedientes,
+    'listar_expedientes': listar_expedientes,
+    'buscar_esquema': buscar_esquema,
+    'esquema_tabla': esquema_tabla,
     'deuda_contribuyente': deuda_contribuyente,
     'buscar_por_dni': buscar_por_dni,
     'verificar_identidad': verificar_identidad,
