@@ -4,10 +4,12 @@ Carga la documentación experta del proyecto SIGAP KPI (wiki + docs) y del sitio
 oficial del municipio (datos_municipio/), y recupera los fragmentos relevantes
 para cada pregunta (RAG simple por palabras clave, sin dependencias externas).
 """
+import os
 import unicodedata
 from pathlib import Path
 
-SIGAP_KPI = Path(r'C:\Users\User\Documents\CODE\SIGAPP KPI')
+SIGAP_KPI = Path(os.getenv('SIGAP_KPI_DIR') or
+                 r'C:\Users\User\Documents\CODE\SIGAPP KPI')
 DATOS_MUNICIPIO = Path(__file__).resolve().parent.parent / 'datos_municipio'
 
 # Archivos de conocimiento (curados) y su límite de caracteres.
