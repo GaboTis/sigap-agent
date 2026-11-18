@@ -330,6 +330,26 @@ def consultar_expediente(numero: int, ano: int) -> dict:
     return {'total': d['total'], 'resultados': d['resultados']}
 
 
+def presupuesto_lrf() -> dict:
+    """PRESUPUESTO Y RESPONSABILIDAD FISCAL (Ley 1812-I): semáforo de reglas
+    (gasto vs IPC, deuda, empleo, fin de mandato), proyección del próximo
+    período, tope de gasto permitido y cruce con la recaudación real."""
+    import os
+    import httpx as _httpx
+
+    base = os.getenv('SIGAP_WEB_URL', 'http://127.0.0.1:5000')
+    token = os.getenv('CONSULTA_BOT_TOKEN', '')
+    try:
+        r = _httpx.get(f'{base}/api/presupuesto/analisis-bot',
+                       headers={'X-Consulta-Token': token}, timeout=30)
+        d = r.json()
+    except Exception as e:
+        return {'error': f'No se pudo consultar el presupuesto: {str(e)[:120]}'}
+    if not d.get('ok'):
+        return {'error': d.get('message', d.get('error', 'Error de presupuesto.'))}
+    return d
+
+
 # ── Herramientas por modo de acceso ─────────────────────────
 # 'visor' = solo consultas (sin generar planillas/exportes)
 _NOMBRES_EXPORTACION = {'exportar_listado', 'generar_planilla'}
@@ -835,6 +855,21 @@ HERRAMIENTAS = [
             },
         },
     },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'presupuesto_lrf',
+            'description': 'PRESUPUESTO Y RESPONSABILIDAD FISCAL (Ley 1812-I): semáforo de reglas '
+                           'fiscales (gasto vs IPC, deuda, empleo, fin de mandato), proyección del '
+                           'próximo período, tope de gasto permitido y cruce con la recaudación real. '
+                           'Usar cuando pregunten por el presupuesto, la regla del gasto, el IPC, la '
+                           'Ley 1812-I, responsabilidad fiscal o el cumplimiento de la Comisión Fiscal.',
+            'parameters': {
+                'type': 'object',
+                'properties': {},
+            },
+        },
+    },
 ]
 
 _FUNCIONES = {
@@ -869,6 +904,7 @@ _FUNCIONES = {
     'licitaciones': licitaciones,
     'buscar_persona': buscar_persona,
     'consultar_expediente': consultar_expediente,
+    'presupuesto_lrf': presupuesto_lrf,
 }
 
 
