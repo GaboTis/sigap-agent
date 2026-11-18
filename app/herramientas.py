@@ -308,17 +308,16 @@ def buscar_persona(apellido: str, nombre: str = None) -> dict:
     return _get('/api/personas/buscar', params)
 
 
-def consultar_expediente(numero: int, ano: int, dni: int) -> dict:
-    """Consulta PÚBLICA de un expediente (número + año + DNI del solicitante).
-    Llama al endpoint público de la web (mismo contenedor). El DNI actúa como
-    llave: si el expediente tiene documento cargado debe coincidir."""
+def consultar_expediente(numero: int, ano: int) -> dict:
+    """Consulta PÚBLICA de un expediente (número + año).
+    Llama al endpoint público de la web (mismo contenedor)."""
     import os
     import httpx as _httpx
 
     base = os.getenv('SIGAP_WEB_URL', 'http://127.0.0.1:5000')
     try:
         r = _httpx.get(f'{base}/api/consulta-expediente',
-                       params={'numero': int(numero), 'ano': int(ano), 'dni': int(dni)},
+                       params={'numero': int(numero), 'ano': int(ano)},
                        timeout=30)
         d = r.json()
     except Exception as e:
@@ -327,7 +326,7 @@ def consultar_expediente(numero: int, ano: int, dni: int) -> dict:
         return {'error': d.get('message', 'Error en la consulta del expediente.')}
     if not d.get('total'):
         return {'sin_resultados': True,
-                'message': d.get('message', 'No se encontró el expediente con ese número, año y DNI.')}
+                'message': d.get('message', 'No se encontró el expediente con ese número y año.')}
     return {'total': d['total'], 'resultados': d['resultados']}
 
 
@@ -824,17 +823,15 @@ HERRAMIENTAS = [
             'name': 'consultar_expediente',
             'description': 'Consulta PÚBLICA de un expediente con los datos del solicitante: '
                            'estado, solicitante, tipo, tema, fecha de inicio, sector actual, folio '
-                           'y motivo. REQUIERE número de expediente, año y DNI del solicitante '
-                           '(el DNI debe coincidir con el cargado). Si el usuario no dio los tres '
-                           'datos, PEDÍSELOS primero.',
+                           'y motivo. REQUIERE número de expediente y año. Si el usuario no dio '
+                           'esos dos datos, PEDÍSELOS primero.',
             'parameters': {
                 'type': 'object',
                 'properties': {
                     'numero': {'type': 'integer', 'description': 'Número de expediente'},
                     'ano': {'type': 'integer', 'description': 'Año del expediente'},
-                    'dni': {'type': 'integer', 'description': 'DNI del solicitante (sin puntos)'},
                 },
-                'required': ['numero', 'ano', 'dni'],
+                'required': ['numero', 'ano'],
             },
         },
     },
