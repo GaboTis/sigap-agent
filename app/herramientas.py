@@ -298,6 +298,39 @@ def kpis_ejecutivos() -> dict:
     return _get('/api/panel/kpis')
 
 
+def buscar_persona(apellido: str, nombre: str = None) -> dict:
+    """CAZADOR DE APELLIDOS: busca una persona con todas las variantes de
+    escritura en toda la base (padrón, sectores, usuarios, expedientes y
+    movimientos)."""
+    params = {'apellido': apellido}
+    if nombre:
+        params['nombre'] = nombre
+    return _get('/api/personas/buscar', params)
+
+
+def consultar_expediente(numero: int, ano: int, dni: int) -> dict:
+    """Consulta PÚBLICA de un expediente (número + año + DNI del solicitante).
+    Llama al endpoint público de la web (mismo contenedor). El DNI actúa como
+    llave: si el expediente tiene documento cargado debe coincidir."""
+    import os
+    import httpx as _httpx
+
+    base = os.getenv('SIGAP_WEB_URL', 'http://127.0.0.1:5000')
+    try:
+        r = _httpx.get(f'{base}/api/consulta-expediente',
+                       params={'numero': int(numero), 'ano': int(ano), 'dni': int(dni)},
+                       timeout=30)
+        d = r.json()
+    except Exception as e:
+        return {'error': f'No se pudo consultar el expediente: {str(e)[:120]}'}
+    if not d.get('ok'):
+        return {'error': d.get('message', 'Error en la consulta del expediente.')}
+    if not d.get('total'):
+        return {'sin_resultados': True,
+                'message': d.get('message', 'No se encontró el expediente con ese número, año y DNI.')}
+    return {'total': d['total'], 'resultados': d['resultados']}
+
+
 # ── Herramientas por modo de acceso ─────────────────────────
 # 'visor' = solo consultas (sin generar planillas/exportes)
 _NOMBRES_EXPORTACION = {'exportar_listado', 'generar_planilla'}
@@ -766,6 +799,45 @@ HERRAMIENTAS = [
             },
         },
     },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'buscar_persona',
+            'description': 'CAZADOR DE APELLIDOS: busca una persona en TODA la base con todas '
+                           'las variantes de escritura plausibles (QU↔CU, dobles letras, acentos) '
+                           'en padrón, responsables de sectores, usuarios, motivos de expedientes '
+                           'y observaciones de movimientos. Usar SIEMPRE cuando pregunten por una '
+                           'persona, apellido o funcionario.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'apellido': {'type': 'string', 'description': 'Apellido (obligatorio)'},
+                    'nombre': {'type': 'string', 'description': 'Nombre opcional para filtrar'},
+                },
+                'required': ['apellido'],
+            },
+        },
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'consultar_expediente',
+            'description': 'Consulta PÚBLICA de un expediente con los datos del solicitante: '
+                           'estado, solicitante, tipo, tema, fecha de inicio, sector actual, folio '
+                           'y motivo. REQUIERE número de expediente, año y DNI del solicitante '
+                           '(el DNI debe coincidir con el cargado). Si el usuario no dio los tres '
+                           'datos, PEDÍSELOS primero.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'numero': {'type': 'integer', 'description': 'Número de expediente'},
+                    'ano': {'type': 'integer', 'description': 'Año del expediente'},
+                    'dni': {'type': 'integer', 'description': 'DNI del solicitante (sin puntos)'},
+                },
+                'required': ['numero', 'ano', 'dni'],
+            },
+        },
+    },
 ]
 
 _FUNCIONES = {
@@ -798,6 +870,8 @@ _FUNCIONES = {
     'guia_tramites': guia_tramites,
     'detalle_tramite': detalle_tramite,
     'licitaciones': licitaciones,
+    'buscar_persona': buscar_persona,
+    'consultar_expediente': consultar_expediente,
 }
 
 
